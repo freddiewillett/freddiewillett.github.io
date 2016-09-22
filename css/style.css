@@ -65,6 +65,15 @@ section {
 	padding: 35px 0 60px;
 }
 
+.myname {
+   border: solid red; 
+   float: left;
+   margin: 10px; 
+   padding: 3px;
+   white-space: none;
+
+}
+
 /*--------------------
 1.1 Reset bootstrap
 --------------------*/
@@ -95,10 +104,11 @@ section {
 	color: #fec503
 }
 .navbar-default .navbar-collapse {
-	border-color: rgba(255,255,255,.02)
+	border-color: rgba(255,255,255,.02);
 }
 .navbar-default .navbar-toggle {
 	background-color: #fed136;
+    word-wrap: left;
 	border-color: #fed136
 }
 .navbar-default .navbar-toggle .icon-bar {
@@ -157,7 +167,7 @@ section {
 	}
 	.navbar-default.navbar-shrink {
 		background-color: #222;
-		padding: 10px 0
+		padding: 10px 0;
 	}
     .navbar-nav>li>a {
         padding-top: 15px;
@@ -170,7 +180,7 @@ section {
 --------------------*/
 
 .section-title {
-	padding-bottom: 30px;
+	padding-bottom: 10px;
 }
 
 .section-title h2 {
@@ -186,7 +196,7 @@ section {
 }
 
 .mz-module .section-title {
-    padding: 40px 0;
+    padding: 40px 0px 0px 0px;
 }
 
 /*--------------------
@@ -194,7 +204,7 @@ section {
 --------------------*/
 
 .mz-about-container {
-    padding: 0 50px;
+    padding: 30px 50px 10px 50px;
 }
 
 .mz-module-about {
