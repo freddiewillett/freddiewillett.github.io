@@ -74,6 +74,13 @@ section {
 
 }
 
+.gravatar {
+    padding: 1px;
+    width: 200px;
+    border-radius: 50%;
+    border: solid red;
+    text-align: center;
+}
 /*--------------------
 1.1 Reset bootstrap
 --------------------*/
@@ -180,7 +187,7 @@ section {
 --------------------*/
 
 .section-title {
-	padding-bottom: 10px;
+	padding-bottom: 20px;
 }
 
 .section-title h2 {
@@ -204,7 +211,8 @@ section {
 --------------------*/
 
 .mz-about-container {
-    padding: 30px 50px 10px 50px;
+    padding: 10px;
+    margin: 15px 40px 10px 40px;
 }
 
 .mz-module-about {
