@@ -66,12 +66,10 @@ section {
 }
 
 .myname {
-   border: 2px solid red; 
-   float: left;
    margin: 10px; 
    padding: 3px;
    white-space: none;
-
+   text-align: center;
 }
 
 .gravatar {
@@ -311,7 +309,7 @@ figure {
     margin: 0 1px 1px 0;
     background: #726FB9;
     text-align: center;
-    cursor: pointer;	
+    cursor: pointer;
 }
 
 figcaption {
