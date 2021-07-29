@@ -72,6 +72,13 @@ section {
    text-align: center;
 }
 
+.myname2 {
+   margin: 10px; 
+   padding: 0px 0 0;
+   white-space: none;
+   text-align: center;
+}
+
 .gravatar {
     padding: 1px;
     width: 200px;
