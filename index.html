@@ -1,1 +1,141 @@
-<html lang="en"> <head></head> <body> <doctype html=""> <meta charset="utf-8"> <title>freddiewillett</title> <link rel="shortcut icon" type="image/png" href="https://i.imgur.com/KQT45s9.png"> <meta name="description" content="fw"> <meta name="author" content="fw"> <meta name="viewport" content="width=device-width, initial-scale=1"> <style>body, html{height: 100%; margin: 0;}.bg{background-image: url("https://i.imgur.com/t7FSFny.jpg"); height: 100%; background-position: center; background-repeat: no-repeat; background-size: cover;}.egg{position: fixed; bottom: 10px; right: 10px;}.logo{margin-left: auto; margin-right: auto; position: fixed; left: 50%; top: 50%; transform: translate(-50%,-50%);}z-index:10000;}</style> <div class="bg"> <img src="https://i.imgur.com/FxrF0HB.png" alt="Logo" class="logo" style="width:50%;"> <a href="https://youtu.be/Xw1k20DpHfA"> <img src="https://i.imgur.com/3c2bRJT.gif" alt="Egg" class="egg" style="width:3%;"> </a> </div><script type="text/javascript">document.addEventListener('contextmenu', event=>event.preventDefault()); </script> </doctype></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>test</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f0f0;
+            background: url('') cover no-repeat;
+            overflow: hidden;
+        }
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-gap: 10px;
+            max-width: 800px;
+            width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .grid-item {
+            width: 100%;
+            padding-bottom: 100%;
+            position: relative;
+            overflow: hidden;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        .grid-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        /* Media query for screens smaller than 600 pixels (adjust as needed) */
+        @media (max-width: 600px) {
+            .grid-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        @media (max-width: 400px) {
+            .grid-container {
+                grid-template-columns: 1fr;
+                max-width: 100%; /* Full width for very small screens */
+            }
+        }
+    
+        @keyframes fadeIn {
+          from {
+              opacity: 0;
+          }
+          to {
+              opacity: 1;
+          }
+        }
+    </style>
+  </head>
+<body>
+
+<div class="grid-container" id="grid-container">
+    <div class="grid-item"><img src="" alt=""></div>
+    <div class="grid-item"><img src="" alt=""></div>
+    <div class="grid-item"><img src="" alt=""></div>
+    <div class="grid-item"><img src="" alt=""></div>
+    <div class="grid-item"><img src="" alt=""></div>
+    <div class="grid-item"><img src="" alt=""></div>
+    <div class="grid-item"><img src="" alt=""></div>
+    <div class="grid-item"><img src="" alt=""></div>
+</div>
+<script>
+        // Function to preload images
+    function preloadImages(images, callback) {
+        let loadedImages = 0;
+
+        images.forEach((src) => {
+            const img = new Image();
+            img.onload = function () {
+                loadedImages++;
+                if (loadedImages === images.length) {
+                    callback();
+                }
+            };
+            img.src = src;
+        });
+    }
+
+    // Function to shuffle array elements
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+
+    // Define two sets of image URLs
+    const imageSets = [
+        ['https://emphasis-dumpster.s3.amazonaws.com/image1.gif', 'https://emphasis-dumpster.s3.amazonaws.com/image2.gif', 'https://emphasis-dumpster.s3.amazonaws.com/image3.gif', 'https://emphasis-dumpster.s3.amazonaws.com/image4.gif', 'https://emphasis-dumpster.s3.amazonaws.com/image5.gif', 'https://emphasis-dumpster.s3.amazonaws.com/image6.gif', 'https://emphasis-dumpster.s3.amazonaws.com/image7.gif', 'https://emphasis-dumpster.s3.amazonaws.com/image8.gif'],
+        ['https://emphasis-dumpster.s3.amazonaws.com/imageA.gif', 'https://emphasis-dumpster.s3.amazonaws.com/imageB.gif', 'https://emphasis-dumpster.s3.amazonaws.com/imageC.gif', 'https://emphasis-dumpster.s3.amazonaws.com/imageD.gif', 'https://emphasis-dumpster.s3.amazonaws.com/imageE.gif', 'https://emphasis-dumpster.s3.amazonaws.com/imageF.gif', 'https://emphasis-dumpster.s3.amazonaws.com/imageG.gif', 'https://emphasis-dumpster.s3.amazonaws.com/imageH.gif']
+    ];
+
+    // Randomly select one set of images
+    const randomSet = imageSets[Math.floor(Math.random() * imageSets.length)];
+
+    // Function to handle the fade-in effect
+    function fadeIn(gridItems, index) {
+        if (index < gridItems.length) {
+            gridItems[index].style.opacity = '1';
+            requestAnimationFrame(() => fadeIn(gridItems, index + 1));
+        }
+    }
+
+    // Shuffle the grid items and trigger fade-in effect with a delay
+    window.addEventListener('DOMContentLoaded', function () {
+        const gridContainer = document.querySelector('.grid-container');
+        const gridItems = Array.from(gridContainer.children);
+
+        // Preload images
+        preloadImages(randomSet, function () {
+            // Assign the shuffled image URLs to the img elements
+            shuffleArray(gridItems);
+            gridItems.forEach((item, index) => {
+                const img = item.querySelector('img');
+                img.src = randomSet[index];
+                item.style.opacity = '0';
+            });
+
+            // Trigger fade-in effect
+            fadeIn(gridItems, 0);
+        });
+    });
+</script>
+
+</body>
+</html>
