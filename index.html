@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>test</title>
+    <title>choose, western man.</title>
     <style>
         body {
             margin: 0;
@@ -39,7 +39,6 @@
             top: 0;
             left: 0;
         }
-        /* Media query for screens smaller than 600 pixels (adjust as needed) */
         @media (max-width: 600px) {
             .grid-container {
                 grid-template-columns: repeat(2, 1fr);
@@ -48,7 +47,10 @@
         @media (max-width: 400px) {
             .grid-container {
                 grid-template-columns: 1fr;
-                max-width: 100%; /* Full width for very small screens */
+                max-width: 100%; 
+            }
+            body {
+                overflow: auto;
             }
         }
     
@@ -74,8 +76,8 @@
     <div class="grid-item"><img src="" alt=""></div>
     <div class="grid-item"><img src="" alt=""></div>
 </div>
+
 <script>
-        // Function to preload images
     function preloadImages(images, callback) {
         let loadedImages = 0;
 
@@ -90,48 +92,33 @@
             img.src = src;
         });
     }
-
-    // Function to shuffle array elements
     function shuffleArray(array) {
         for (let i = array.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [array[i], array[j]] = [array[j], array[i]];
         }
     }
-
-    // Define two sets of image URLs
     const imageSets = [
         ['https://emphasis-dumpster.s3.amazonaws.com/image1.gif', 'https://emphasis-dumpster.s3.amazonaws.com/image2.gif', 'https://emphasis-dumpster.s3.amazonaws.com/image3.gif', 'https://emphasis-dumpster.s3.amazonaws.com/image4.gif', 'https://emphasis-dumpster.s3.amazonaws.com/image5.gif', 'https://emphasis-dumpster.s3.amazonaws.com/image6.gif', 'https://emphasis-dumpster.s3.amazonaws.com/image7.gif', 'https://emphasis-dumpster.s3.amazonaws.com/image8.gif'],
         ['https://emphasis-dumpster.s3.amazonaws.com/imageA.gif', 'https://emphasis-dumpster.s3.amazonaws.com/imageB.gif', 'https://emphasis-dumpster.s3.amazonaws.com/imageC.gif', 'https://emphasis-dumpster.s3.amazonaws.com/imageD.gif', 'https://emphasis-dumpster.s3.amazonaws.com/imageE.gif', 'https://emphasis-dumpster.s3.amazonaws.com/imageF.gif', 'https://emphasis-dumpster.s3.amazonaws.com/imageG.gif', 'https://emphasis-dumpster.s3.amazonaws.com/imageH.gif']
     ];
-
-    // Randomly select one set of images
     const randomSet = imageSets[Math.floor(Math.random() * imageSets.length)];
-
-    // Function to handle the fade-in effect
     function fadeIn(gridItems, index) {
         if (index < gridItems.length) {
             gridItems[index].style.opacity = '1';
             requestAnimationFrame(() => fadeIn(gridItems, index + 1));
         }
     }
-
-    // Shuffle the grid items and trigger fade-in effect with a delay
     window.addEventListener('DOMContentLoaded', function () {
         const gridContainer = document.querySelector('.grid-container');
         const gridItems = Array.from(gridContainer.children);
-
-        // Preload images
         preloadImages(randomSet, function () {
-            // Assign the shuffled image URLs to the img elements
             shuffleArray(gridItems);
             gridItems.forEach((item, index) => {
                 const img = item.querySelector('img');
                 img.src = randomSet[index];
                 item.style.opacity = '0';
             });
-
-            // Trigger fade-in effect
             fadeIn(gridItems, 0);
         });
     });
