@@ -30,6 +30,7 @@
             position: relative;
             overflow: hidden;
             animation: fadeIn 0.5s ease-in-out;
+            cursor: pointer;
         }
         .grid-item img {
             width: 100%;
@@ -102,24 +103,29 @@
         ['https://emphasis-dumpster.s3.amazonaws.com/image1.gif', 'https://emphasis-dumpster.s3.amazonaws.com/image2.gif', 'https://emphasis-dumpster.s3.amazonaws.com/image3.gif', 'https://emphasis-dumpster.s3.amazonaws.com/image4.gif', 'https://emphasis-dumpster.s3.amazonaws.com/image5.gif', 'https://emphasis-dumpster.s3.amazonaws.com/image6.gif', 'https://emphasis-dumpster.s3.amazonaws.com/image7.gif', 'https://emphasis-dumpster.s3.amazonaws.com/image8.gif'],
         ['https://emphasis-dumpster.s3.amazonaws.com/imageA.gif', 'https://emphasis-dumpster.s3.amazonaws.com/imageB.gif', 'https://emphasis-dumpster.s3.amazonaws.com/imageC.gif', 'https://emphasis-dumpster.s3.amazonaws.com/imageD.gif', 'https://emphasis-dumpster.s3.amazonaws.com/imageE.gif', 'https://emphasis-dumpster.s3.amazonaws.com/imageF.gif', 'https://emphasis-dumpster.s3.amazonaws.com/imageG.gif', 'https://emphasis-dumpster.s3.amazonaws.com/imageH.gif']
     ];
-    const randomSet = imageSets[Math.floor(Math.random() * imageSets.length)];
-    function fadeIn(gridItems, index) {
-        if (index < gridItems.length) {
-            gridItems[index].style.opacity = '1';
-            requestAnimationFrame(() => fadeIn(gridItems, index + 1));
-        }
-    }
-    window.addEventListener('DOMContentLoaded', function () {
-        const gridContainer = document.querySelector('.grid-container');
-        const gridItems = Array.from(gridContainer.children);
+    let currentSet = [];
+
+    function loadRandomImages(gridContainer) {
+        const randomSet = imageSets[Math.floor(Math.random() * imageSets.length)];
+        currentSet = randomSet;
         preloadImages(randomSet, function () {
-            shuffleArray(gridItems);
+            const gridItems = Array.from(gridContainer.children);
+            shuffleArray(randomSet);
             gridItems.forEach((item, index) => {
                 const img = item.querySelector('img');
                 img.src = randomSet[index];
-                item.style.opacity = '0';
             });
-            fadeIn(gridItems, 0);
+        });
+    }
+
+    window.addEventListener('DOMContentLoaded', function () {
+        const gridContainer = document.querySelector('.grid-container');
+        loadRandomImages(gridContainer);
+
+        gridContainer.addEventListener('click', function (event) {
+            if (event.target.tagName === 'IMG') {
+                loadRandomImages(gridContainer);
+            }
         });
     });
 </script>
