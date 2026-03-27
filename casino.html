@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CASINO OS - Ultimate Edition</title>
+<style>
+  :root { --win-bg: #c0c0c0; --win-border-light: #ffffff; --win-border-dark: #808080; --win-border-darkest: #000000; --title-active: #000080; --title-inactive: #808080; --desktop-bg: #008080; --casino-green: #006400; --lcd-black: #111; --lcd-text: #00ff00; }
+  body { background-color: var(--desktop-bg); font-family: "MS Sans Serif", Tahoma, Arial, sans-serif; margin: 0; overflow: hidden; user-select: none; transition: background 0.3s; }
+  
+  /* --- Dynamic Wallpapers & Palettes --- */
+  body.bg_red { background: linear-gradient(45deg, #800000 25%, #a00000 25%, #a00000 50%, #800000 50%, #800000 75%, #a00000 75%, #a00000 100%); background-size: 40px 40px; --casino-green: #600000; --lcd-text: #ffcccc; }
+  body.bg_gold { background: radial-gradient(circle, #ffd700, #daa520, #8b6508); --casino-green: #8b6508; --lcd-text: #ffd700; }
+  body.bg_dog { background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" style="font-size:40px"><text y="40">🐶</text></svg>') repeat; background-color: #ffaa00; --casino-green: #a66a00; --lcd-text: #ffffff; }
+  body.bg_matrix { background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" style="font-size:20px;fill:lime;font-family:monospace"><text y="20">0</text><text y="40" x="20">1</text></svg>') repeat; background-color: #000; --casino-green: #001100; --lcd-text: #00ff00; }
+  body.bg_clouds { background: linear-gradient(to bottom, #3b82f6, #87ceeb, #ffffff); --casino-green: #1e3a8a; --lcd-text: #87ceeb; }
+  body.bg_chips { background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" style="font-size:30px"><text y="30">🎰</text></svg>') repeat; background-color: #4b0082; --casino-green: #300052; --lcd-text: #dda0dd; }
+
+  /* --- Marquee --- */
+  .marquee-bar { width: 100vw; height: 25px; background: #000; border-bottom: 2px solid var(--win-border-light); overflow: hidden; display: flex; box-sizing: border-box;}
+  .marquee-content { display: flex; animation: scrollMarquee 40s linear infinite; font-family: monospace; font-size: 16px; font-weight: bold; white-space: nowrap; }
+  @keyframes scrollMarquee { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+  .rb-char { display: inline-block; animation: rbColor 1s infinite; text-shadow: 1px 1px 0px #fff; }
+  @keyframes rbColor { 0%{color:red;} 17%{color:orange;} 33%{color:yellow;} 50%{color:lime;} 67%{color:cyan;} 83%{color:magenta;} 100%{color:red;} }
+
+  #desktop { position: relative; width: 100vw; height: calc(100vh - 60px); padding: 10px; box-sizing: border-box; display: flex; flex-direction: column; gap: 15px; align-items: flex-start; }
+  .desktop-icon { width: 75px; display: flex; flex-direction: column; align-items: center; cursor: default; padding: 5px; }
+  .desktop-icon.selected .icon-label { background-color: #000080; color: white; outline: 1px dotted yellow; }
+  .icon-emoji { font-size: 36px; margin-bottom: 5px; text-shadow: 2px 2px 2px rgba(0,0,0,0.5); pointer-events: none; }
+  .icon-label { color: white; font-size: 12px; text-align: center; padding: 2px; pointer-events: none; text-shadow: 1px 1px 1px #000; }
+
+  /* --- Cashy Mascot --- */
+  #cashy-container { position: absolute; z-index: 999999; cursor: grab; transition: top 2s ease-in-out, left 2s ease-in-out; width: 60px; height: 60px; display: flex; justify-content: center; align-items: center;}
+  #cashy-container.dragging { transition: none !important; cursor: grabbing; }
+  .cashy-bubble { position: absolute; bottom: 100%; right: 0; background: #ffffe1; border: 2px solid black; padding: 8px; border-radius: 8px; font-size: 12px; color: black; font-weight: bold; margin-bottom: 15px; box-shadow: 2px 2px 0px rgba(0,0,0,0.5); width: 150px; text-align: center; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .cashy-bubble::after { content: ''; position: absolute; bottom: -10px; right: 20px; border-width: 10px 10px 0; border-style: solid; border-color: black transparent transparent; display: block; width: 0; }
+  .cashy-bubble::before { content: ''; position: absolute; bottom: -7px; right: 21px; border-width: 8px 8px 0; border-style: solid; border-color: #ffffe1 transparent transparent; display: block; width: 0; z-index: 1; }
+  .cashy-body { font-size: 50px; position: relative; text-shadow: 2px 2px 5px rgba(0,0,0,0.5); transform-origin: bottom center; transition: transform 0.1s; }
+  .cashy-body:active { transform: scale(0.9) rotate(-5deg); }
+  
+  @keyframes blink { 0%, 96%, 98%, 100% { transform: scaleY(1); } 97%, 99% { transform: scaleY(0.1); } }
+  .cashy-eyes { position: absolute; top: 12px; left: 10px; font-size: 24px; pointer-events: none; animation: blink 4s infinite; transform-origin: center; }
+
+  /* --- Windows --- */
+  .window { background-color: var(--win-bg); border-top: 2px solid var(--win-border-light); border-left: 2px solid var(--win-border-light); border-bottom: 2px solid var(--win-border-darkest); border-right: 2px solid var(--win-border-darkest); box-shadow: inset -1px -1px 0px 0px var(--win-border-dark); padding: 2px; position: absolute; display: none; flex-direction: column; box-sizing: border-box; }
+  .window.maximized { top: 0 !important; left: 0 !important; width: 100vw !important; height: calc(100vh - 60px) !important; }
+  .window.maximized .game-container { align-items: center; justify-content: space-evenly; }
+  .window.maximized .reels-wrapper, .window.maximized .bj-felt, .window.maximized .rl-board, .window.maximized .bac-felt { transform: scale(1.5); transform-origin: center top; margin-top: 40px; }
+  .window.maximized .control-panel { width: 500px; transform: scale(1.3); transform-origin: center bottom; margin-bottom: 20px; }
+  .title-bar { background-color: var(--title-active); color: white; padding: 3px 5px; font-weight: bold; font-size: 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; cursor: default; flex-shrink: 0;}
+  .title-bar-controls { display: flex; gap: 2px; }
+  .title-btn { background: var(--win-bg); border: 1px solid; border-color: var(--win-border-light) var(--win-border-darkest) var(--win-border-darkest) var(--win-border-light); width: 16px; height: 14px; font-size: 10px; line-height: 10px; text-align: center; color: black; font-weight: bold; cursor: pointer; }
+  .title-btn:active { border-style: inset; padding: 1px 0 0 1px; }
+
+  /* --- Start Menu & Taskbar --- */
+  .start-menu { position: fixed; bottom: 35px; left: 0; margin: 0; width: 220px; background: var(--win-bg); border: 2px solid; border-color: var(--win-border-light) var(--win-border-darkest) var(--win-border-darkest) var(--win-border-light); z-index: 10000; box-shadow: 2px 2px 0px rgba(0,0,0,0.5); display: none; flex-direction: row; }
+  .start-sidebar { background: linear-gradient(to top, #000080, #1084d0); width: 30px; color: white; writing-mode: vertical-rl; transform: rotate(180deg); padding: 5px; font-weight: bold; font-size: 16px; display: flex; align-items: flex-end; }
+  .start-items { flex: 1; padding: 2px; display: flex; flex-direction: column; }
+  .start-item { padding: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 14px; }
+  .start-item:hover { background-color: #000080; color: white; }
+  .start-divider { border-bottom: 1px inset #fff; margin: 2px 5px; }
+
+  .taskbar { position: fixed; bottom: 0; left: 0; width: 100%; height: 35px; background-color: var(--win-bg); border-top: 2px solid var(--win-border-light); display: flex; align-items: center; padding: 2px 4px; box-sizing: border-box; z-index: 9999; }
+  .start-btn { border: 2px solid; border-color: var(--win-border-light) var(--win-border-darkest) var(--win-border-darkest) var(--win-border-light); background: var(--win-bg); font-weight: bold; padding: 2px 6px; display: flex; align-items: center; gap: 5px; cursor: pointer; height: 100%; box-sizing: border-box; }
+  .start-btn:active, .start-btn.active { border: 2px inset var(--win-border-darkest); padding: 4px 4px 0px 8px; background: #aaa; }
+  .taskbar-apps { flex: 1; display: flex; gap: 4px; margin-left: 10px; overflow-x: hidden; }
+  .taskbar-item { border: 2px solid; border-color: var(--win-border-light) var(--win-border-darkest) var(--win-border-darkest) var(--win-border-light); padding: 4px 10px; font-size: 12px; font-weight: bold; min-width: 120px; max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; box-sizing: border-box; height: 100%; }
+  .taskbar-item.active { border: 2px inset var(--win-border-darkest); background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFElEQVQIW2NkYGD4z8DAwMgAI0AMDA4D/wtw+xAAAAAASUVORK5CYII=') repeat; }
+  .sys-tray { border: 2px inset var(--win-border-dark); padding: 2px 10px; display: flex; align-items: center; gap: 10px; height: 100%; box-sizing: border-box; font-size: 12px; }
+  .mute-btn { cursor: pointer; font-size: 14px; }
+
+  /* --- Game UI Commons --- */
+  .game-container { background-color: var(--casino-green); border: 3px inset var(--win-border-dark); padding: 15px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; overflow: hidden; position: relative;}
+  .control-panel { background-color: #222; border: 3px inset #555; padding: 10px; display: flex; flex-direction: column; gap: 10px; z-index: 2;}
+  .displays { display: flex; justify-content: space-between; gap: 5px; }
+  .lcd { background-color: var(--lcd-black); color: var(--lcd-text); border: 2px inset var(--win-border-dark); padding: 5px; font-family: monospace; font-size: 1.1rem; font-weight: bold; flex: 1; text-align: center; }
+  .buttons { display: flex; justify-content: space-between; gap: 5px; }
+  .btn { background-color: var(--win-bg); border: 2px solid; border-color: var(--win-border-light) var(--win-border-darkest) var(--win-border-darkest) var(--win-border-light); padding: 8px 10px; font-weight: bold; cursor: pointer; flex: 1; font-family: "MS Sans Serif", sans-serif; font-size: 0.9rem;}
+  .btn:active, .btn.active-toggle { border: 2px inset var(--win-border-dark); background-color: #aaa; padding: 9px 9px 7px 11px; }
+  .btn:disabled { color: #888; text-shadow: 1px 1px 0px #fff; cursor: not-allowed; border-color: var(--win-border-light) var(--win-border-darkest) var(--win-border-darkest) var(--win-border-light); background: var(--win-bg); padding: 8px 10px;}
+  .btn-spin { color: #cc0000; flex: 2; font-size: 1.1rem; }
+
+  /* --- Slots --- */
+  .slotWindow { width: 500px; height: 460px; }
+  .reels-wrapper { display: flex; justify-content: center; gap: 10px; background-color: #fff; border: 4px inset #000; padding: 10px; height: 240px; margin-bottom: 15px; overflow: hidden; }
+  .reel { width: 100px; border: 2px solid #555; background: linear-gradient(to bottom, #cccccc 0%, #ffffff 20%, #ffffff 80%, #cccccc 100%); overflow: hidden; position: relative; cursor: pointer; }
+  .reel-strip { display: flex; flex-direction: column; }
+  .symbol { height: 80px; line-height: 80px; font-size: 3.5rem; font-weight: 900; text-shadow: 2px 2px 0px #000, -1px -1px 0px #fff; text-align: center; }
+  .s-seven { color: #FFD700; text-shadow: 2px 2px 0px #ff0000, -1px -1px 0px #000; }
+
+  /* --- Cards Commons --- */
+  .card { width: 65px; height: 95px; background: white; border: 1px solid #333; border-radius: 5px; box-shadow: 2px 2px 5px rgba(0,0,0,0.5); display: flex; flex-direction: column; justify-content: space-between; padding: 4px; font-size: 1.1rem; font-weight: bold; font-family: 'Times New Roman', serif; position: relative; margin: 0 5px; }
+  .card.red { color: red; } .card.black { color: black; }
+  .card.hidden { background: repeating-linear-gradient(45deg, #000080, #000080 10px, #ffffff 10px, #ffffff 20px); border: 2px solid white; color: transparent; }
+  .card .tl { position: absolute; top: 4px; left: 4px; line-height: 1; } .card .br { position: absolute; bottom: 4px; right: 4px; line-height: 1; transform: rotate(180deg); } .card .center { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2.2rem; }
+  
+  /* --- Blackjack --- */
+  .bjWindow { width: 550px; height: 460px; }
+  .bj-felt { flex: 1; display: flex; flex-direction: column; justify-content: space-between; margin-bottom: 15px; }
+  .bj-area { min-height: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;}
+  .bj-label { color: white; font-weight: bold; margin-bottom: 5px; font-size: 1.1rem; text-shadow: 1px 1px 0px #000; }
+  .bj-hands-container { display: flex; gap: 20px; justify-content: center; }
+  .bj-cards { display: flex; gap: -40px; justify-content: center; min-height: 100px; padding: 5px; border-radius: 5px; transition: background 0.3s;}
+  .bj-cards.active-hand { background: rgba(255, 255, 0, 0.3); border: 1px dashed yellow; }
+
+  /* --- Baccarat --- */
+  .bacWindow { width: 520px; height: 460px; }
+  .bac-felt { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; margin-bottom: 15px; gap: 20px;}
+  .bac-table-areas { display: flex; width: 100%; justify-content: space-around; }
+  .bac-area { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 45%; border: 2px dotted rgba(255,255,255,0.3); padding: 10px; border-radius: 10px;}
+  .bac-label { color: white; font-weight: bold; margin-bottom: 10px; font-size: 1.2rem; text-shadow: 1px 1px 0px #000; text-transform: uppercase;}
+  .bac-cards { display: flex; gap: 5px; justify-content: center; min-height: 100px; }
+
+  /* --- Roulette Board --- */
+  .rlWindow { width: 600px; height: 520px; }
+  .rl-container { display: flex; flex-direction: column; align-items: center; justify-content: space-between; flex: 1; margin-bottom: 15px; }
+  .rl-wheel-area { display: flex; width: 100%; align-items: center; justify-content: space-between; background: #111; border: 3px inset #555; padding: 10px; box-sizing: border-box; }
+  .rl-wheel-box { background: #000; border: 2px inset #fff; border-radius: 50%; width: 70px; height: 70px; display: flex; align-items: center; justify-content: center; box-shadow: 0px 0px 10px #000; position: relative; }
+  .rl-number-display { font-size: 2rem; font-weight: bold; color: white; font-family: monospace; }
+  .rl-number-display.red { color: #ff3333; } .rl-number-display.black { color: #aaaaaa; } .rl-number-display.green { color: #00ff00; }
+  .rl-status { color: yellow; font-family: monospace; font-size: 1.2rem; font-weight: bold; flex: 1; text-align: center; }
+  .rl-grid { display: grid; grid-template-columns: 40px repeat(12, 1fr); grid-template-rows: repeat(5, 30px); gap: 2px; background: var(--casino-green); padding: 5px; border: 2px inset #000; width: 100%; box-sizing: border-box; }
+  .rl-cell { display: flex; align-items: center; justify-content: center; border: 1px solid rgba(255,255,255,0.5); color: white; cursor: pointer; position: relative; font-weight: bold; font-family: Arial; font-size: 12px;}
+  .rl-cell.red { background: #d00; } .rl-cell.black { background: #222; } .rl-cell.green { background: #0a0; }
+  .rl-cell:not(.red):not(.black):not(.green) { background: rgba(0,0,0,0.2); }
+  .rl-cell:hover { opacity: 0.7; }
+  .rl-chip { position: absolute; width: 22px; height: 22px; background: #ffaa00; border: 2px solid #000; outline: 1px dotted #fff; border-radius: 50%; color: black; font-size: 9px; display: flex; align-items: center; justify-content: center; z-index: 2; font-weight: 900; box-shadow: 2px 2px 4px rgba(0,0,0,0.8); pointer-events: none;}
+
+  /* --- Shop Window --- */
+  #shopWindow { width: 480px; height: 500px; }
+  .shop-tabs { display: flex; border-bottom: 2px solid var(--win-border-light); background: var(--win-bg); flex-shrink: 0; overflow-x: auto;}
+  .shop-tab { padding: 5px 10px; cursor: pointer; border: 2px solid transparent; border-bottom: none; border-radius: 3px 3px 0 0; margin-top: 2px; font-size: 11px; font-weight: bold; white-space: nowrap;}
+  .shop-tab.active { background: var(--win-bg); border-color: var(--win-border-light) var(--win-border-darkest) transparent var(--win-border-light); transform: translateY(2px); padding-bottom: 7px; }
+  .shop-pane { display: none; padding: 10px; background: var(--win-bg); flex-direction: column; flex: 1; overflow-y: auto; border: 2px solid; border-color: transparent var(--win-border-darkest) var(--win-border-darkest) transparent; }
+  .shop-pane.active { display: flex; }
+  .shop-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px groove #fff; padding-bottom: 5px; margin-bottom: 10px; flex-shrink: 0;}
+  .shop-item { display: flex; gap: 10px; align-items: center; border: 2px inset var(--win-border-dark); padding: 8px; margin-bottom: 8px; background: white; flex-shrink: 0;}
+  .shop-icon { font-size: 32px; width: 40px; text-align: center; }
+  .shop-desc { flex: 1; font-size: 11px; } .shop-desc h4 { margin: 0 0 2px 0; font-size: 14px; color: #000080; } .shop-desc p { margin: 0; color: #444; }
+  .buy-btn { width: 85px; font-size: 11px; }
+
+  /* --- Info Window --- */
+  #infoWindow { width: 420px; height: 480px;}
+  .info-content { padding: 15px; font-size: 12px; background: var(--win-bg); flex: 1; overflow-y: auto; }
+  .paytable { width: 100%; border-collapse: collapse; margin-top: 5px; background: white; border: 2px inset var(--win-border-dark); }
+  .paytable th, .paytable td { border: 1px solid #ccc; padding: 3px; text-align: center; color: black; } .paytable th { background: #eee; }
+
+  /* --- Animations --- */
+  .game-msg { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); font-size: 4rem; font-weight: 900; color: yellow; text-shadow: 4px 4px 0px red, -2px -2px 0px black; display: none; z-index: 10; pointer-events: none; text-align: center; width: 100%; }
+  .is-flashing { display: block; animation: flash 0.15s infinite; }
+  @keyframes flash { 0% { color: yellow; text-shadow: 4px 4px 0px red; } 50% { color: red; text-shadow: 4px 4px 0px yellow; } 100% { color: yellow; text-shadow: 4px 4px 0px red; } }
+  .confetti { position: fixed; width: 12px; height: 12px; opacity: 0.9; z-index: 99999; pointer-events: none; }
+</style>
+</head>
+<body>
+
+<div class="marquee-bar">
+    <div class="marquee-content" id="marquee-content"></div>
+</div>
+
+<div id="desktop">
+  <div class="desktop-icon" onclick="selectIcon(this)" ondblclick="launchSlotGame()"><div class="icon-emoji">🎰</div><div class="icon-label">Slots</div></div>
+  <div class="desktop-icon" onclick="selectIcon(this)" ondblclick="launchBjGame()"><div class="icon-emoji">🃏</div><div class="icon-label">Blackjack</div></div>
+  <div class="desktop-icon" onclick="selectIcon(this)" ondblclick="launchBacGame()"><div class="icon-emoji">🏦</div><div class="icon-label">Baccarat</div></div>
+  <div class="desktop-icon" onclick="selectIcon(this)" ondblclick="launchRlGame()"><div class="icon-emoji">🎡</div><div class="icon-label">Roulette</div></div>
+  <div class="desktop-icon" onclick="selectIcon(this)" ondblclick="setWindowState('shopWindow', 'open')"><div class="icon-emoji">🛒</div><div class="icon-label">Upgrades</div></div>
+  <div class="desktop-icon" onclick="selectIcon(this)" ondblclick="setWindowState('infoWindow', 'open')"><div class="icon-emoji">📋</div><div class="icon-label">Manual</div></div>
+</div>
+
+<div id="cashy-container" onmousedown="dragCashy(event)">
+    <div class="cashy-bubble" id="cashy-bubble">I see you looking at that max bet button...</div>
+    <div class="cashy-body" id="cashy-body">💵<div class="cashy-eyes" id="cashy-eyes">👀</div></div>
+</div>
+
+<div class="start-menu" id="start-menu">
+  <div class="start-sidebar"><span><b>CASINO</b> OS</span></div>
+  <div class="start-items">
+    <div class="start-item" onclick="launchSlotGame(); toggleStartMenu();">🎰 Launch The Money Game</div>
+    <div class="start-item" onclick="launchBjGame(); toggleStartMenu();">🃏 Play Blackjack</div>
+    <div class="start-item" onclick="launchBacGame(); toggleStartMenu();">🏦 Play Baccarat</div>
+    <div class="start-item" onclick="launchRlGame(); toggleStartMenu();">🎡 Spin Roulette</div>
+    <div class="start-item" onclick="setWindowState('shopWindow', 'open'); toggleStartMenu();">🛒 Store & Upgrades</div>
+    <div class="start-divider"></div>
+    <div class="start-item" onclick="localStorage.removeItem('casino_save'); location.reload();">⚠️ Hard Reset Save...</div>
+    <div class="start-item" onclick="alert('It is now safe to turn off your computer.');">🛑 Shut Down...</div>
+  </div>
+</div>
+
+<div class="window" id="shopWindow" style="top: 50px; left: 50px; z-index: 11;" data-state="closed" data-title="Store & Upgrades">
+  <div class="title-bar" onmousedown="dragMouseDown(event, 'shopWindow')">
+    <span>🛒 Casino Upgrades</span>
+    <div class="title-bar-controls"><div class="title-btn" onclick="setWindowState('shopWindow', 'minimized')">_</div><div class="title-btn" onclick="setWindowState('shopWindow', 'closed')">X</div></div>
+  </div>
+  
+  <div class="shop-tabs">
+      <div class="shop-tab active" onclick="switchShopTab('slots')">Slots</div>
+      <div class="shop-tab" onclick="switchShopTab('bj')">Blackjack</div>
+      <div class="shop-tab" onclick="switchShopTab('bac')">Baccarat</div>
+      <div class="shop-tab" onclick="switchShopTab('rl')">Roulette</div>
+      <div class="shop-tab" onclick="switchShopTab('theme')">Themes</div>
+      <div class="shop-tab" onclick="switchShopTab('mascot')">Mascots</div>
+      <div class="shop-tab" onclick="switchShopTab('inv')">Inventory</div>
+  </div>
+
+  <div id="shop-slots" class="shop-pane active">
+    <div class="shop-header"><b>Slot Upgrades</b><span style="font-family: monospace; background: black; color: #00ff00; padding: 2px 5px;">Wallet: <span class="shop-wallet">1000</span></span></div>
+    <div class="shop-item"><div class="shop-icon">🐒</div><div class="shop-desc"><h4>Monkey Paw</h4><p>Grants 3 free slot spins.</p></div><button class="btn buy-btn" onclick="buyItem('paw', 150)">150 CR</button></div>
+    <div class="shop-item"><div class="shop-icon">🍀</div><div class="shop-desc"><h4>4-Leaf Clover</h4><p>Permanently increases slot luck.</p></div><button class="btn buy-btn" id="btn-clover" onclick="buyItem('clover', 500)">500 CR</button></div>
+    <div class="shop-item"><div class="shop-icon">🎲</div><div class="shop-desc"><h4>Loaded Dice</h4><p>Multiplies slot payouts by 1.5x.</p></div><button class="btn buy-btn" id="btn-dice" onclick="buyItem('dice', 1500)">1500 CR</button></div>
+    <div class="shop-item"><div class="shop-icon">🎆</div><div class="shop-desc"><h4>Firework</h4><p>Guarantees a Jackpot next spin.</p></div><button class="btn buy-btn" onclick="buyItem('firework', 2000)">2000 CR</button></div>
+    <div class="shop-item"><div class="shop-icon">🎰</div><div class="shop-desc"><h4>Extra Reel</h4><p>Unlocks a 4th reel across all slots!</p></div><button class="btn buy-btn" id="btn-reel" onclick="buyItem('reel', 3000)">3000 CR</button></div>
+    <div class="shop-item" style="border-color: #ffd700;"><div class="shop-icon">🖥️</div><div class="shop-desc"><h4>Multislot License</h4><p>Open multiple slot windows!</p></div><button class="btn buy-btn" id="btn-multi" onclick="buyItem('multi', 5000)">5000 CR</button></div>
+  </div>
+
+  <div id="shop-bj" class="shop-pane">
+    <div class="shop-header"><b>BJ Upgrades</b><span style="font-family: monospace; background: black; color: #00ff00; padding: 2px 5px;">Wallet: <span class="shop-wallet">1000</span></span></div>
+    <div class="shop-item"><div class="shop-icon">🤝</div><div class="shop-desc"><h4>Tiebreaker</h4><p>Pushes count as a Win.</p></div><button class="btn buy-btn" id="btn-tiebreaker" onclick="buyItem('tiebreaker', 800)">800 CR</button></div>
+    <div class="shop-item"><div class="shop-icon">👓</div><div class="shop-desc"><h4>X-Ray Specs</h4><p>Reveals the dealer's hole card.</p></div><button class="btn buy-btn" id="btn-xray" onclick="buyItem('xray', 1000)">1000 CR</button></div>
+    <div class="shop-item"><div class="shop-icon">💎</div><div class="shop-desc"><h4>Suited Bonus</h4><p>Suited Blackjacks pay 3:1 instead of 3:2.</p></div><button class="btn buy-btn" id="btn-suited" onclick="buyItem('suited', 1500)">1500 CR</button></div>
+    <div class="shop-item"><div class="shop-icon">🛡️</div><div class="shop-desc"><h4>Insurance Payout</h4><p>Dealer busting pays 2.5x instead of 2x.</p></div><button class="btn buy-btn" id="btn-insurance" onclick="buyItem('insurance', 2000)">2000 CR</button></div>
+    <div class="shop-item"><div class="shop-icon">🎩</div><div class="shop-desc"><h4>5-Card Charlie</h4><p>Auto-win if you draw 5 cards safely.</p></div><button class="btn buy-btn" id="btn-charlie" onclick="buyItem('charlie', 2500)">2500 CR</button></div>
+    <div class="shop-item" style="border-color: #ffd700;"><div class="shop-icon">👔</div><div class="shop-desc"><h4>Pit Boss License</h4><p>Open multiple Blackjack tables!</p></div><button class="btn buy-btn" id="btn-bjmulti" onclick="buyItem('bjmulti', 4000)">4000 CR</button></div>
+  </div>
+
+  <div id="shop-bac" class="shop-pane">
+    <div class="shop-header"><b>Baccarat Upgrades</b><span style="font-family: monospace; background: black; color: #00ff00; padding: 2px 5px;">Wallet: <span class="shop-wallet">1000</span></span></div>
+    <div class="shop-item"><div class="shop-icon">🚫</div><div class="shop-desc"><h4>Commission Free</h4><p>Banker bet pays 1:1.</p></div><button class="btn buy-btn" id="btn-bac_comm" onclick="buyItem('bac_comm', 1000)">1000 CR</button></div>
+    <div class="shop-item"><div class="shop-icon">🎀</div><div class="shop-desc"><h4>Generous Tie</h4><p>Tie bet pays 10:1 instead of 8:1.</p></div><button class="btn buy-btn" id="btn-bac_tie" onclick="buyItem('bac_tie', 1500)">1500 CR</button></div>
+    <div class="shop-item"><div class="shop-icon">👑</div><div class="shop-desc"><h4>Natural 9 Bonus</h4><p>Winning with a Natural 9 pays 2:1.</p></div><button class="btn buy-btn" id="btn-bac_nat" onclick="buyItem('bac_nat', 2000)">2000 CR</button></div>
+    <div class="shop-item"><div class="shop-icon">🐉</div><div class="shop-desc"><h4>Dragon 7</h4><p>Banker winning with 3-card 7 pays 40:1.</p></div><button class="btn buy-btn" id="btn-bac_dragon" onclick="buyItem('bac_dragon', 2500)">2500 CR</button></div>
+    <div class="shop-item"><div class="shop-icon">🐼</div><div class="shop-desc"><h4>Panda 8</h4><p>Player winning with 3-card 8 pays 25:1.</p></div><button class="btn buy-btn" id="btn-bac_panda" onclick="buyItem('bac_panda', 2500)">2500 CR</button></div>
+    <div class="shop-item" style="border-color: #ffd700;"><div class="shop-icon">🕴️</div><div class="shop-desc"><h4>Baccarat Pit Boss</h4><p>Open multiple Baccarat tables!</p></div><button class="btn buy-btn" id="btn-bac_multi" onclick="buyItem('bac_multi', 4500)">4500 CR</button></div>
+  </div>
+
+  <div id="shop-rl" class="shop-pane">
+    <div class="shop-header"><b>Roulette Upgrades</b><span style="font-family: monospace; background: black; color: #00ff00; padding: 2px 5px;">Wallet: <span class="shop-wallet">1000</span></span></div>
+    <div class="shop-item"><div class="shop-icon">🧲</div><div class="shop-desc"><h4>Magnetic Felt</h4><p>Outside bets pay 4:1 instead of 2:1.</p></div><button class="btn buy-btn" id="btn-magnet" onclick="buyItem('magnet', 1500)">1500 CR</button></div>
+    <div class="shop-item"><div class="shop-icon">🛟</div><div class="shop-desc"><h4>Safety Net</h4><p>Landing on 0 refunds ALL bets.</p></div><button class="btn buy-btn" id="btn-safety" onclick="buyItem('safety', 1800)">1800 CR</button></div>
+    <div class="shop-item"><div class="shop-icon">🪙</div><div class="shop-desc"><h4>Golden Chip</h4><p>Single number bets pay 100:1.</p></div><button class="btn buy-btn" id="btn-golden" onclick="buyItem('golden', 2000)">2000 CR</button></div>
+    <div class="shop-item"><div class="shop-icon">✨</div><div class="shop-desc"><h4>Lucky 7</h4><p>Betting on 7 pays 500:1!</p></div><button class="btn buy-btn" id="btn-lucky7" onclick="buyItem('lucky7', 2500)">2500 CR</button></div>
+    <div class="shop-item"><div class="shop-icon">🤑</div><div class="shop-desc"><h4>Zero Jackpot</h4><p>Landing on 0 pays 50:1.</p></div><button class="btn buy-btn" id="btn-zerojackpot" onclick="buyItem('zerojackpot', 3000)">3000 CR</button></div>
+    <div class="shop-item" style="border-color: #ffd700;"><div class="shop-icon">🤵</div><div class="shop-desc"><h4>Croupier License</h4><p>Open multiple Roulette tables!</p></div><button class="btn buy-btn" id="btn-rlmulti" onclick="buyItem('rlmulti', 3500)">3500 CR</button></div>
+  </div>
+
+  <div id="shop-theme" class="shop-pane">
+    <div class="shop-header"><b>Desktop Themes</b><span style="font-family: monospace; background: black; color: #00ff00; padding: 2px 5px;">Wallet: <span class="shop-wallet">1000</span></span></div>
+    <div class="shop-item"><div class="shop-icon" style="background:#008080; color:white; font-size:20px; line-height:40px;">💻</div><div class="shop-desc"><h4>Classic Teal</h4><p>The default OS experience.</p></div><button class="btn buy-btn" onclick="applyTheme('bg_teal')">EQUIP</button></div>
+    <div class="shop-item"><div class="shop-icon" style="background:#800000; color:white; font-size:20px; line-height:40px;">♦️</div><div class="shop-desc"><h4>High Roller</h4><p>Deep red diamond pattern.</p></div><button class="btn buy-btn" id="btn-bg_red" onclick="buyItem('bg_red', 500)">500 CR</button></div>
+    <div class="shop-item"><div class="shop-icon" style="background:#daa520; color:white; font-size:20px; line-height:40px;">👑</div><div class="shop-desc"><h4>Golden VIP</h4><p>Solid gold luxury.</p></div><button class="btn buy-btn" id="btn-bg_gold" onclick="buyItem('bg_gold', 1000)">1000 CR</button></div>
+    <div class="shop-item"><div class="shop-icon" style="background:#ffaa00;">🐶</div><div class="shop-desc"><h4>Dog</h4><p>A good boy.</p></div><button class="btn buy-btn" id="btn-bg_dog" onclick="buyItem('bg_dog', 2000)">2000 CR</button></div>
+    <div class="shop-item"><div class="shop-icon" style="background:#000; color:lime; font-family:monospace;">01</div><div class="shop-desc"><h4>Hacker Terminal</h4><p>I'm in.</p></div><button class="btn buy-btn" id="btn-bg_matrix" onclick="buyItem('bg_matrix', 3000)">3000 CR</button></div>
+    <div class="shop-item"><div class="shop-icon" style="background:#87ceeb;">☁️</div><div class="shop-desc"><h4>Clouds</h4><p>A breath of fresh air.</p></div><button class="btn buy-btn" id="btn-bg_clouds" onclick="buyItem('bg_clouds', 4000)">4000 CR</button></div>
+    <div class="shop-item"><div class="shop-icon" style="background:#4b0082;">🎰</div><div class="shop-desc"><h4>Casino Floor</h4><p>Immersive slot texture.</p></div><button class="btn buy-btn" id="btn-bg_chips" onclick="buyItem('bg_chips', 5000)">5000 CR</button></div>
+  </div>
+
+  <div id="shop-mascot" class="shop-pane">
+    <div class="shop-header"><b>Mascot Costumes</b><span style="font-family: monospace; background: black; color: #00ff00; padding: 2px 5px;">Wallet: <span class="shop-wallet">1000</span></span></div>
+    <div class="shop-item"><div class="shop-icon">💵</div><div class="shop-desc"><h4>Classic Cashy</h4><p>The original.</p></div><button class="btn buy-btn" onclick="equipMascot('mascot_classic')">EQUIP</button></div>
+    <div class="shop-item"><div class="shop-icon">📎</div><div class="shop-desc"><h4>Paperclip Costume</h4><p>Looks like you're trying to gamble!</p></div><button class="btn buy-btn" id="btn-mascot_clippy" onclick="buyItem('mascot_clippy', 1500)">1500 CR</button></div>
+    <div class="shop-item"><div class="shop-icon">🤑</div><div class="shop-desc"><h4>Golden Cashy</h4><p>For the mascot with expensive tastes.</p></div><button class="btn buy-btn" id="btn-mascot_gold" onclick="buyItem('mascot_gold', 2000)">2000 CR</button></div>
+    <div class="shop-item" style="border-color: #800000;"><div class="shop-icon">🥷</div><div class="shop-desc"><h4>Hitman</h4><p>Permanently delete the mascot.</p></div><button class="btn buy-btn" id="btn-mascot_delete" onclick="buyItem('mascot_delete', 5000)">5000 CR</button></div>
+  </div>
+
+  <div id="shop-inv" class="shop-pane">
+    <div class="shop-header"><b>Your Upgrades</b></div>
+    <div id="inv-list" style="font-size: 13px; line-height: 1.8;"></div>
+  </div>
+</div>
+
+<div class="window" id="infoWindow" style="top: 100px; left: 550px; z-index: 12;" data-state="closed" data-title="Paytable & Info">
+  <div class="title-bar" onmousedown="dragMouseDown(event, 'infoWindow')">
+    <span>📋 System Manual</span>
+    <div class="title-bar-controls"><div class="title-btn" onclick="setWindowState('infoWindow', 'minimized')">_</div><div class="title-btn" onclick="setWindowState('infoWindow', 'closed')">X</div></div>
+  </div>
+  <div class="info-content">
+    <b>Slots Winning Multipliers:</b><br><i style="font-size: 11px;">(Any 2 Cherries = x2. Any 1 Cherry = x1.)</i>
+    <table class="paytable"><tr><th>Symbols</th><th>3 Match</th><th>4 Match</th></tr><tr><td>7️⃣ 7️⃣ 7️⃣</td><td>x 50</td><td>x 250</td></tr><tr><td>🍉 🍉 🍉</td><td>x 20</td><td>x 100</td></tr><tr><td>🍇 🍇 🍇</td><td>x 15</td><td>x 75</td></tr><tr><td>🍋 🍋 🍋</td><td>x 10</td><td>x 50</td></tr><tr><td>🍒 🍒 🍒</td><td>x 5</td><td>x 25</td></tr></table>
+    <hr style="border:1px inset #fff; margin: 10px 0;">
+    <b>Blackjack Rules:</b>
+    <ul style="font-size: 11px; padding-left: 20px; margin-top: 5px;"><li>Dealer hits on 16, stands on 17.</li><li>Blackjack pays 3:2. Standard wins pay 1:1.</li><li><b>DOUBLE DOWN:</b> Double bet, get 1 card, stand.</li><li><b>SPLIT:</b> If first 2 cards match value, split into two hands.</li></ul>
+    <hr style="border:1px inset #fff; margin: 10px 0;">
+    <b>Baccarat Rules:</b>
+    <ul style="font-size: 11px; padding-left: 20px; margin-top: 5px;"><li>Bet on Player, Banker, or Tie. Closest to 9 wins.</li><li>Tens & Faces = 0. Third card rules applied automatically.</li><li>Player pays 1:1. Banker pays 1:1 (minus 5% comm). Tie pays 8:1.</li></ul>
+    <hr style="border:1px inset #fff; margin: 10px 0;">
+    <b>Roulette Rules:</b>
+    <ul style="font-size: 11px; padding-left: 20px; margin-top: 5px;"><li>Select a chip size (Bet), then click the grid to place bets.</li><li>Outside Bets pay 2:1. Dozens pay 3:1. Single Numbers pay 36:1.</li></ul>
+  </div>
+</div>
+
+<div class="taskbar">
+  <div class="start-btn" id="start-btn" onclick="toggleStartMenu()">🎰 Start</div>
+  <div class="taskbar-apps" id="taskbar-apps"></div>
+  <div class="sys-tray"><div class="mute-btn" id="mute-icon" onclick="toggleGlobalMute()" title="Mute Audio">🔊</div><span id="clock">12:00 PM</span></div>
+</div>
+
+<script>
+  /* =========================================
+     GLOBAL STATE & PERSISTENCE
+     ========================================= */
+  let credits = 1000;
+  let U = { 
+      clover: false, dice: false, reel: false, multi: false, 
+      tiebreaker: false, suited: false, xray: false, charlie: false, insurance: false, bjmulti: false, 
+      magnet: false, safety: false, golden: false, lucky7: false, zerojackpot: false, rlmulti: false,
+      bac_comm: false, bac_tie: false, bac_nat: false, bac_dragon: false, bac_panda: false, bac_multi: false,
+      bg_red: false, bg_gold: false, bg_dog: false, bg_matrix: false, bg_clouds: false, bg_chips: false,
+      mascot_clippy: false, mascot_gold: false, mascot_delete: false, cashy_fled: false
+  };
+  let globalFreeSpins = 0; let globalFireworkActive = false; let currentBg = 'bg_teal';
+
+  const UPGRADE_NAMES = { 
+      clover: '🍀 4-Leaf Clover', dice: '🎲 Loaded Dice', reel: '🎰 Extra Reel', multi: '🖥️ Multislot License', 
+      tiebreaker: '🤝 Tiebreaker', xray: '👓 X-Ray Specs', suited: '💎 Suited Bonus', charlie: '🎩 5-Card Charlie', insurance: '🛡️ Insurance Payout', bjmulti: '👔 Pit Boss License', 
+      magnet: '🧲 Magnetic Felt', safety: '🛟 Safety Net', golden: '🪙 Golden Chip', lucky7: '✨ Lucky 7', zerojackpot: '🤑 Zero Jackpot', rlmulti: '🤵 Croupier License',
+      bac_comm: '🚫 Commission Free', bac_tie: '🎀 Generous Tie', bac_nat: '👑 Natural 9 Bonus', bac_dragon: '🐉 Dragon 7', bac_panda: '🐼 Panda 8', bac_multi: '🕴️ Baccarat Pit Boss',
+      mascot_clippy: '📎 Paperclip Costume', mascot_gold: '🤑 Golden Cashy', mascot_delete: '🥷 Hitman'
+  };
+
+  function saveGame() { localStorage.setItem('casino_save', JSON.stringify({ credits: credits, U: U, freeSpins: globalFreeSpins, currentBg: currentBg })); renderInventory(); }
+
+  function loadGame() {
+    const save = localStorage.getItem('casino_save');
+    if (save) {
+      try {
+        const data = JSON.parse(save); credits = data.credits || 1000; if(data.U) U = { ...U, ...data.U }; globalFreeSpins = data.freeSpins || 0;
+        if(data.currentBg) applyTheme(data.currentBg);
+        
+        Object.keys(U).forEach(k => { 
+            if(U[k]) { 
+                const btn = document.getElementById(`btn-${k}`); 
+                if(btn){ 
+                    if(k.startsWith('bg_')) { btn.disabled = false; btn.innerText = "EQUIP"; btn.onclick = () => applyTheme(k); }
+                    else if (k.startsWith('mascot_')) { btn.disabled = false; btn.innerText = "EQUIP"; btn.onclick = () => equipMascot(k); }
+                    else { btn.disabled = true; btn.innerText = "SOLD"; }
+                } 
+            } 
+        });
+        if(U.clover) { symbols[1].weight=10; symbols[2].weight=15; symbols[4].weight=15; }
+        
+        if(U.mascot_delete || U.cashy_fled) equipMascot('mascot_delete');
+        else if (U.currentMascot) equipMascot(U.currentMascot);
+        else if (U.mascot_gold) equipMascot('mascot_gold');
+        else if (U.mascot_clippy) equipMascot('mascot_clippy');
+        
+      } catch (e) { console.error("Save load failed"); }
+    }
+    updateAllDisplays(); renderInventory();
+  }
+
+  // Dev Cheat Code
+  document.addEventListener('keydown', (e) => {
+      if (e.key === '0') { credits += 10000; updateAllDisplays(); saveGame(); playSound('jackpot'); }
+  });
+
+  /* =========================================
+     MARQUEE RENDERER (SEAMLESS)
+     ========================================= */
+  const text = "WELCOME TO CASINO OS  •  THE ULTIMATE RETRO BETTING EXPERIENCE  •  MULTIPLY YOUR WEALTH  •  NO REFUNDS  •  SPIN TO WIN  •  ";
+  const baseString = text.split('').map((c, i) => c===' '?'&nbsp;':`<span class="rb-char" style="animation-delay: -${i*0.05}s">${c}</span>`).join('').repeat(3);
+  document.getElementById('marquee-content').innerHTML = baseString + baseString;
+
+  /* =========================================
+     CASHY THE MASCOT
+     ========================================= */
+  let activeQuotes = [
+      "99% of gamblers quit right before they win big!", "I see you looking at that max bet button...", 
+      "The house always wins! Wait, I shouldn't say that.", "Betting on a tie? Bold move.", 
+      "My eyes are up here, buddy.", "Double down! What's the worst that could happen?", 
+      "If you're broke, just sell a kidney!", "I eat RAM for breakfast.", "Don't forget, you can't win unless you bet big!"
+  ];
+  
+  function equipMascot(id) {
+      if (id !== 'mascot_classic' && !U[id] && !U.cashy_fled) return; 
+      playSound('click');
+      const el = document.getElementById('cashy-container');
+      if (id === 'mascot_delete' || U.cashy_fled) { el.style.display = 'none'; U.currentMascot = 'mascot_delete'; saveGame(); return; }
+      
+      el.style.display = 'flex';
+      if (id === 'mascot_gold') {
+          document.getElementById('cashy-body').innerHTML = `💰<div class="cashy-eyes">🤑</div>`;
+          activeQuotes = ["Is that all you're betting? Peasant.", "My yacht needs a yacht.", "I only drink vintage printer ink.", "Have you considered insider trading?"];
+      } else if (id === 'mascot_clippy') {
+          document.getElementById('cashy-body').innerHTML = `📎<div class="cashy-eyes">👀</div>`;
+          activeQuotes = ["It looks like you're trying to lose money. Would you like some help?", "Have you tried turning your luck off and on again?", "I miss Microsoft Word."];
+      } else if (id === 'mascot_classic') {
+          document.getElementById('cashy-body').innerHTML = `💵<div class="cashy-eyes">👀</div>`;
+          activeQuotes = [
+              "99% of gamblers quit right before they win big!", "I see you looking at that max bet button...", 
+              "The house always wins! Wait, I shouldn't say that.", "Betting on a tie? Bold move.", 
+              "My eyes are up here, buddy.", "Double down! What's the worst that could happen?", 
+              "If you're broke, just sell a kidney!", "I eat RAM for breakfast.", "Don't forget, you can't win unless you bet big!"
+          ];
+      }
+      U.currentMascot = id; saveGame();
+  }
+
+  let cashyClickCount = 0; let cashyAnnoyCount = 0;
+  function pokeCashy() {
+      if(U.mascot_delete || U.cashy_fled) return;
+      cashyClickCount++;
+      const bubble = document.getElementById('cashy-bubble');
+      
+      if (cashyClickCount >= 10) {
+          cashyClickCount = 0; cashyAnnoyCount++; credits += 10;
+          updateAllDisplays(); saveGame(); playSound('win');
+          
+          if (cashyAnnoyCount >= 5) {
+              bubble.innerText = "That's it, I'm out of here! Good luck going broke!";
+              U.cashy_fled = true; saveGame();
+              setTimeout(() => { document.getElementById('cashy-container').style.display = 'none'; }, 3000);
+          } else { bubble.innerText = "Here's 10 credits, now leave me alone!"; }
+      } else {
+          bubble.innerText = activeQuotes[Math.floor(Math.random() * activeQuotes.length)];
+          playSound('tick');
+      }
+      bubble.style.opacity = 1; setTimeout(() => { bubble.style.opacity = 0; }, 4000);
+  }
+  
+  let cashyMoved = false; let cPos1=0, cPos2=0, cPos3=0, cPos4=0;
+  function dragCashy(e) {
+      e.preventDefault(); cashyMoved = false; cPos3 = e.clientX; cPos4 = e.clientY;
+      document.onmouseup = closeDragCashy; document.onmousemove = cashyElementDrag;
+      document.getElementById('cashy-container').classList.add('dragging');
+  }
+  function cashyElementDrag(e) {
+      e.preventDefault(); 
+      cPos1 = cPos3 - e.clientX; cPos2 = cPos4 - e.clientY; cPos3 = e.clientX; cPos4 = e.clientY;
+      if (Math.abs(cPos1) > 2 || Math.abs(cPos2) > 2) cashyMoved = true;
+      let el = document.getElementById('cashy-container');
+      el.style.top = (el.offsetTop - cPos2) + "px"; el.style.left = (el.offsetLeft - cPos1) + "px";
+      resetCashyWander();
+  }
+  function closeDragCashy(e) {
+      document.onmouseup = null; document.onmousemove = null;
+      document.getElementById('cashy-container').classList.remove('dragging');
+      if (!cashyMoved) pokeCashy();
+  }
+  
+  let cashyWanderTimer = null;
+  function resetCashyWander() {
+      clearInterval(cashyWanderTimer);
+      cashyWanderTimer = setInterval(() => {
+          let el = document.getElementById('cashy-container');
+          if (el.classList.contains('dragging') || el.style.display === 'none') return;
+          let maxX = window.innerWidth - 100; let maxY = window.innerHeight - 150;
+          el.style.left = Math.max(0, Math.floor(Math.random() * maxX)) + 'px';
+          el.style.top = Math.max(0, Math.floor(Math.random() * maxY)) + 'px';
+      }, 15000); 
+  }
+  
+  let cashyEl = document.getElementById('cashy-container');
+  cashyEl.style.top = (window.innerHeight - 150) + "px"; cashyEl.style.left = (window.innerWidth - 150) + "px";
+  resetCashyWander();
+
+  /* =========================================
+     OS ENVIRONMENT LOGIC
+     ========================================= */
+  let zIndexCounter = 20; let isMuted = false; let activeWindowId = null;
+  setInterval(() => { let d = new Date(); let h = d.getHours(); let m = d.getMinutes().toString().padStart(2, '0'); document.getElementById('clock').innerText = `${h%12||12}:${m} ${h>=12?'PM':'AM'}`; }, 1000); 
+
+  function toggleGlobalMute() { isMuted = !isMuted; document.getElementById('mute-icon').innerText = isMuted ? '🔇' : '🔊'; updateMusicContext(); }
+
+  function toggleStartMenu() {
+    const menu = document.getElementById('start-menu'); const btn = document.getElementById('start-btn');
+    if (menu.style.display === 'flex') { menu.style.display = 'none'; btn.classList.remove('active'); } 
+    else { menu.style.display = 'flex'; btn.classList.add('active'); bringToFront('start-menu'); }
+  }
+
+  document.addEventListener('mousedown', function(e) {
+    if (!e.target.closest('#start-menu') && !e.target.closest('.start-btn')) { document.getElementById('start-menu').style.display = 'none'; document.getElementById('start-btn').classList.remove('active'); }
+    if (!e.target.closest('.desktop-icon') && !e.target.closest('.window') && !e.target.closest('#cashy-container')) { document.querySelectorAll('.desktop-icon').forEach(icon => icon.classList.remove('selected')); activeWindowId = null; updateMusicContext(); }
+  });
+  function selectIcon(el) { document.querySelectorAll('.desktop-icon').forEach(icon => icon.classList.remove('selected')); el.classList.add('selected'); }
+
+  function bringToFront(id) {
+    const el = document.getElementById(id); if (!el) return;
+    zIndexCounter++; el.style.zIndex = zIndexCounter; activeWindowId = id;
+    document.querySelectorAll('.window .title-bar').forEach(tb => tb.style.backgroundColor = 'var(--title-inactive)');
+    const tb = el.querySelector('.title-bar'); if (tb) tb.style.backgroundColor = 'var(--title-active)';
+    renderTaskbar(); updateMusicContext();
+  }
+
+  function setWindowState(id, state) {
+    const el = document.getElementById(id); el.dataset.state = state;
+    if (state === 'closed' || state === 'minimized') { el.style.display = 'none'; if(activeWindowId === id) activeWindowId = null; } 
+    else if (state === 'open') { el.style.display = 'flex'; bringToFront(id); }
+    renderTaskbar(); updateMusicContext();
+  }
+  function toggleMaximize(id) { document.getElementById(id).classList.toggle('maximized'); bringToFront(id); }
+
+  function renderTaskbar() {
+    const container = document.getElementById('taskbar-apps'); container.innerHTML = ''; let maxZ = 0; let aId = null;
+    document.querySelectorAll('.window').forEach(win => { if (win.dataset.state === 'open' && parseInt(win.style.zIndex || 0) > maxZ) { maxZ = parseInt(win.style.zIndex || 0); aId = win.id; }});
+    activeWindowId = aId;
+    document.querySelectorAll('.window').forEach(win => {
+      if (win.dataset.state !== 'closed') {
+        const btn = document.createElement('div'); const isActive = (win.id === aId && win.dataset.state === 'open');
+        btn.className = 'taskbar-item ' + (isActive ? 'active' : ''); btn.innerText = win.dataset.title;
+        btn.onclick = () => { if (isActive) setWindowState(win.id, 'minimized'); else setWindowState(win.id, 'open'); }; container.appendChild(btn);
+      }
+    });
+  }
+
+  let activeDragId = null; let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+  function dragMouseDown(e, id) { if (e.target.classList.contains('title-btn') || document.getElementById(id).classList.contains('maximized')) return; e.preventDefault(); bringToFront(id); activeDragId = id; pos3 = e.clientX; pos4 = e.clientY; document.onmouseup = closeDragElement; document.onmousemove = elementDrag; }
+  function elementDrag(e) { if (!activeDragId) return; e.preventDefault(); const el = document.getElementById(activeDragId); pos1 = pos3 - e.clientX; pos2 = pos4 - e.clientY; pos3 = e.clientX; pos4 = e.clientY; el.style.top = (el.offsetTop - pos2) + "px"; el.style.left = (el.offsetLeft - pos1) + "px"; }
+  function closeDragElement() { document.onmouseup = null; document.onmousemove = null; activeDragId = null; }
+
+  /* =========================================
+     AUDIO & MUZAK ENGINE
+     ========================================= */
+  let audioCtx; let musicTimer = null; let melodyIdx = 0; let currentTheme = 'none';
+  const themes = { 
+      shop: { speed: 250, wave: 'sine', notes: [ 261.63, 329.63, 392.00, 493.88, 0, 293.66, 349.23, 440.00, 523.25, 0 ] }, 
+      slot: { speed: 150, wave: 'square', notes: [ 523.25, 0, 659.25, 0, 783.99, 1046.50, 783.99, 659.25 ] }, 
+      bj: { speed: 300, wave: 'triangle', notes: [ 130.81, 130.81, 0, 155.56, 174.61, 174.61, 0, 196.00, 174.61, 155.56 ] }, 
+      rl: { speed: 200, wave: 'sawtooth', notes: [ 392.00, 0, 493.88, 0, 587.33, 0 ] },
+      bac: { speed: 500, wave: 'sine', notes: [ 261.63, 392.00, 329.63, 261.63 ] },
+      manual: { speed: 400, wave: 'square', notes: [ 65.41, 0, 65.41, 65.41, 0, 98.00, 0, 65.41 ] }
+  };
+
+  function initAudio() { if (isMuted) return; if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
+
+  function playSound(type) {
+    if (isMuted || !audioCtx) return; const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination); let t = audioCtx.currentTime;
+    if (type === 'click' || type === 'card') { osc.type = 'triangle'; osc.frequency.setValueAtTime(300, t); osc.frequency.exponentialRampToValueAtTime(100, t + 0.1); gain.gain.setValueAtTime(0.2, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1); osc.start(); osc.stop(t + 0.1); }
+    else if (type === 'tick') { osc.type = 'square'; osc.frequency.setValueAtTime(800, t); gain.gain.setValueAtTime(0.05, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.05); osc.start(); osc.stop(t + 0.05); }
+    else if (type === 'win') { osc.type = 'square'; gain.gain.setValueAtTime(0.2, t); [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => { osc.frequency.setValueAtTime(freq, t + (i * 0.1)); }); gain.gain.setValueAtTime(0.2, t + 0.3); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.5); osc.start(t); osc.stop(t + 0.5); }
+    else if (type === 'jackpot') { osc.type = 'sawtooth'; gain.gain.setValueAtTime(0.3, t); for(let i=0; i<15; i++) { osc.frequency.setValueAtTime(600, t + (i*0.1)); osc.frequency.setValueAtTime(1200, t + (i*0.1) + 0.05); } gain.gain.exponentialRampToValueAtTime(0.01, t + 1.5); osc.start(t); osc.stop(t + 1.5); }
+    else if (type === 'lose') { osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, t); osc.frequency.linearRampToValueAtTime(50, t + 0.5); gain.gain.setValueAtTime(0.3, t); gain.gain.linearRampToValueAtTime(0.01, t + 0.5); osc.start(t); osc.stop(t + 0.5); }
+    else if (type === 'buy') { osc.type = 'sine'; osc.frequency.setValueAtTime(880, t); osc.frequency.setValueAtTime(1108.73, t+0.1); gain.gain.setValueAtTime(0.3, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3); osc.start(); osc.stop(t + 0.3); }
+  }
+
+  function updateMusicContext() {
+    initAudio(); if (isMuted || !activeWindowId || !audioCtx) { clearInterval(musicTimer); currentTheme = 'none'; return; }
+    let targetTheme = 'none';
+    if (activeWindowId === 'shopWindow') targetTheme = 'shop'; else if (activeWindowId === 'infoWindow') targetTheme = 'manual'; else if (activeWindowId.startsWith('slot_')) targetTheme = 'slot'; else if (activeWindowId.startsWith('bj_')) targetTheme = 'bj'; else if (activeWindowId.startsWith('rl_')) targetTheme = 'rl'; else if (activeWindowId.startsWith('bac_')) targetTheme = 'bac';
+    
+    if (targetTheme === currentTheme) return; 
+    currentTheme = targetTheme; clearInterval(musicTimer);
+    
+    if (targetTheme !== 'none') {
+      const theme = themes[targetTheme]; melodyIdx = 0;
+      musicTimer = setInterval(() => {
+        let freq = theme.notes[melodyIdx];
+        if (freq > 0) {
+          let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.type = theme.wave; osc.frequency.value = freq;
+          gain.gain.setValueAtTime(targetTheme==='manual'?0.05:(targetTheme==='bj'?0.2:0.03), audioCtx.currentTime); 
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + (theme.speed/1000)); osc.start(); osc.stop(audioCtx.currentTime + (theme.speed/1000));
+        }
+        melodyIdx = (melodyIdx + 1) % theme.notes.length;
+      }, theme.speed);
+    }
+  }
+
+  function fireConfetti() {
+    const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffffff'];
+    for (let i = 0; i < 150; i++) {
+        let conf = document.createElement('div'); conf.classList.add('confetti'); conf.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        conf.style.left = '50vw'; conf.style.top = '50vh'; document.body.appendChild(conf); 
+        let angle = Math.random() * Math.PI * 2; let speed = Math.random() * 25 + 10; let vx = Math.cos(angle) * speed; let vy = Math.sin(angle) * speed - 20; let rot = Math.random() * 360; let rotSpeed = (Math.random() - 0.5) * 20;
+        let tick = 0;
+        function animateConfetti() { tick++; vx *= 0.97; vy += 0.8; rot += rotSpeed; conf.style.transform = `translate(-50%, -50%) translate(${vx*tick}px, ${vy*tick}px) rotate(${rot}deg)`; if (tick < 150) requestAnimationFrame(animateConfetti); else conf.remove(); }
+        requestAnimationFrame(animateConfetti);
+    }
+  }
+
+  /* =========================================
+     SHOP CONTROLLER & THEMES
+     ========================================= */
+  function switchShopTab(tab) {
+    document.querySelectorAll('.shop-tab').forEach(t => t.classList.remove('active')); document.querySelectorAll('.shop-pane').forEach(p => p.classList.remove('active'));
+    event.target.classList.add('active'); document.getElementById('shop-'+tab).classList.add('active');
+  }
+
+  function applyTheme(themeClass) {
+      if (themeClass !== 'bg_teal' && !U[themeClass]) return;
+      document.body.className = ''; if(themeClass !== 'bg_teal') document.body.classList.add(themeClass);
+      currentBg = themeClass; saveGame(); playSound('click');
+  }
+
+  function renderInventory() {
+    const inv = document.getElementById('inv-list'); inv.innerHTML = ''; let count = 0;
+    Object.keys(U).forEach(k => { if(U[k] && UPGRADE_NAMES[k]) { inv.innerHTML += `<div>✔️ ${UPGRADE_NAMES[k]}</div>`; count++; } });
+    if (count === 0) inv.innerHTML = `<i>No upgrades purchased yet.</i>`;
+  }
+
+  function updateAllDisplays() {
+    document.querySelectorAll('.shop-wallet').forEach(el => el.innerText = credits);
+    Object.values(slotInstances).forEach(app => app.updateDisplay()); Object.values(bjInstances).forEach(app => app.updateDisplay()); Object.values(rlInstances).forEach(app => app.updateDisplay()); Object.values(bacInstances).forEach(app => app.updateDisplay());
+  }
+
+  function buyItem(id, cost) {
+    initAudio(); if (credits < cost) { alert("Not enough credits!"); return; }
+    
+    // Golden VIP Bankrupt Check
+    if (id === 'bg_gold' && credits - cost === 0) {
+        alert("You spent all your starting money on a shiny background before even playing a game. Absolutely stupid.");
+    }
+    
+    credits -= cost; playSound('buy'); U[id] = true;
+    if (id === 'clover') { symbols[1].weight = 10; symbols[2].weight = 15; symbols[4].weight = 15; } 
+    else if (id === 'paw') { globalFreeSpins += 3; U[id] = false; } else if (id === 'firework') { globalFireworkActive = true; U[id] = false; } 
+    else if (id === 'reel') { Object.values(slotInstances).forEach(slot => { document.getElementById(`reel-4_${slot.id}`).style.display = 'block'; let strip = document.getElementById(`r3_${slot.id}`); let html = ''; for (let i=0; i<3; i++) { let sym = symbols[i]; html += `<div class="symbol ${sym.class}">${sym.char}</div>`; } strip.innerHTML = html; }); }
+    else if (id.startsWith('mascot_')) { equipMascot(id); }
+    
+    if (id.startsWith('bg_')) { applyTheme(id); const btn = document.getElementById(`btn-${id}`); if(btn) {btn.innerText = 'EQUIP'; btn.disabled = false; btn.onclick = () => applyTheme(id); } }
+    else if (id.startsWith('mascot_')) { const btn = document.getElementById(`btn-${id}`); if(btn) {btn.innerText = 'EQUIP'; btn.disabled = false; btn.onclick = () => equipMascot(id); } }
+    else if (document.getElementById(`btn-${id}`)) { document.getElementById(`btn-${id}`).disabled = true; document.getElementById(`btn-${id}`).innerText = "SOLD"; }
+    updateAllDisplays(); saveGame();
+  }
+
+  /* =========================================
+     BACCARAT CLASS
+     ========================================= */
+  const bacInstances = {}; let bacCounter = 0;
+  class BaccaratTable {
+    constructor() { bacCounter++; this.id = 'bac_' + bacCounter; this.betSize = 50; this.bets = {player:0, banker:0, tie:0}; this.state = 'idle'; this.deck = []; this.pHand = []; this.bHand = []; this.buildDOM(); }
+    buildDOM() {
+      const win = document.createElement('div'); win.className = 'window bacWindow'; win.id = this.id; win.dataset.title = `Baccarat (${bacCounter})`;
+      const offset = (bacCounter % 10) * 25; win.style.top = (60 + offset) + "px"; win.style.left = (450 + offset) + "px";
+      win.innerHTML = `
+        <div class="title-bar" onmousedown="dragMouseDown(event, '${this.id}')"><span>🏦 Casino Baccarat (${bacCounter})</span><div class="title-bar-controls"><div class="title-btn" onclick="setWindowState('${this.id}', 'minimized')">_</div><div class="title-btn" onclick="toggleMaximize('${this.id}')">□</div><div class="title-btn" onclick="setWindowState('${this.id}', 'closed')">X</div></div></div>
+        <div class="game-container">
+          <div class="game-msg" id="bac-msg_${this.id}"></div>
+          <div class="bac-felt">
+            <div class="bac-table-areas">
+                <div class="bac-area"><div class="bac-label">PLAYER <span id="bac-p-score_${this.id}"></span></div><div class="bac-cards" id="bac-p-cards_${this.id}"></div></div>
+                <div class="bac-area"><div class="bac-label">BANKER <span id="bac-b-score_${this.id}"></span></div><div class="bac-cards" id="bac-b-cards_${this.id}"></div></div>
+            </div>
+            <div class="buttons" style="width:100%; gap: 10px;">
+                <button class="btn" style="flex:1; display:flex; flex-direction:column; align-items:center;" onclick="bacInstances['${this.id}'].placeBet('player')"><b>PLAYER (1:1)</b><span id="bac-bet-p_${this.id}" style="color:var(--lcd-text); font-family:monospace;">0</span></button>
+                <button class="btn" style="flex:1; display:flex; flex-direction:column; align-items:center;" onclick="bacInstances['${this.id}'].placeBet('tie')"><b>TIE (${U.bac_tie?'10':'8'}:1)</b><span id="bac-bet-t_${this.id}" style="color:var(--lcd-text); font-family:monospace;">0</span></button>
+                <button class="btn" style="flex:1; display:flex; flex-direction:column; align-items:center;" onclick="bacInstances['${this.id}'].placeBet('banker')"><b>BANKER (${U.bac_comm?'1:1':'0.95:1'})</b><span id="bac-bet-b_${this.id}" style="color:var(--lcd-text); font-family:monospace;">0</span></button>
+            </div>
+          </div>
+          <div class="control-panel">
+            <div class="displays"><div class="lcd">CR: <span id="bac-credits_${this.id}">${credits}</span></div><div class="lcd">CHIP: <span id="bac-chip_${this.id}">${this.betSize}</span></div></div>
+            <div class="buttons"><button class="btn btn-info" id="bac-btn-clear_${this.id}" onclick="bacInstances['${this.id}'].clearBets()">CLEAR</button><button class="btn btn-bet" id="bac-btn-chip_${this.id}" onclick="bacInstances['${this.id}'].changeChip()">CHIP UP</button><button class="btn btn-spin" id="bac-btn-deal_${this.id}" onclick="bacInstances['${this.id}'].deal()">DEAL</button></div>
+          </div>
+        </div>`;
+      document.getElementById('desktop').appendChild(win); bacInstances[this.id] = this; this.updateDisplay(); setWindowState(this.id, 'open');
+    }
+
+    updateDisplay() { document.getElementById(`bac-credits_${this.id}`).innerText = credits; document.getElementById(`bac-chip_${this.id}`).innerText = this.betSize; document.getElementById(`bac-bet-p_${this.id}`).innerText = this.bets.player; document.getElementById(`bac-bet-b_${this.id}`).innerText = this.bets.banker; document.getElementById(`bac-bet-t_${this.id}`).innerText = this.bets.tie; }
+    changeChip() { initAudio(); if (this.state === 'idle') { this.betSize = this.betSize >= 500 ? 50 : this.betSize + 50; this.updateDisplay(); } }
+    
+    placeBet(type) { if(this.state !== 'idle') return; if(credits < this.betSize) { alert("Not enough credits!"); return; } credits -= this.betSize; this.bets[type] += this.betSize; playSound('click'); this.updateDisplay(); saveGame(); }
+    clearBets() { if(this.state !== 'idle') return; let refund = this.bets.player + this.bets.banker + this.bets.tie; if(refund > 0) { credits += refund; this.bets = {player:0, banker:0, tie:0}; playSound('click'); this.updateDisplay(); saveGame(); } }
+
+    getDeck() { let d = []; [{c:'♠', color:'black'}, {c:'♣', color:'black'}, {c:'♥', color:'red'}, {c:'♦', color:'red'}].forEach(s => ['2','3','4','5','6','7','8','9','10','J','Q','K','A'].forEach(v => d.push({ suit: s, val: v }))); return d.sort(() => Math.random() - 0.5); }
+    getVal(hand) { return hand.reduce((sum, c) => sum + (['10','J','Q','K'].includes(c.val) ? 0 : (c.val==='A'?1:parseInt(c.val))), 0) % 10; }
+    renderCard(c) { return `<div class="card ${c.suit.color}"><div class="tl">${c.val}</div><div class="center">${c.suit.c}</div><div class="br">${c.val}</div></div>`; }
+
+    updateUI() {
+      const pArea = document.getElementById(`bac-p-cards_${this.id}`); const bArea = document.getElementById(`bac-b-cards_${this.id}`);
+      pArea.innerHTML = ''; bArea.innerHTML = '';
+      this.pHand.forEach(c => pArea.innerHTML += this.renderCard(c)); this.bHand.forEach(c => bArea.innerHTML += this.renderCard(c));
+      document.getElementById(`bac-p-score_${this.id}`).innerText = this.pHand.length>0 ? `(${this.getVal(this.pHand)})` : '';
+      document.getElementById(`bac-b-score_${this.id}`).innerText = this.bHand.length>0 ? `(${this.getVal(this.bHand)})` : '';
+    }
+
+    deal() {
+      initAudio(); if (this.bets.player===0 && this.bets.banker===0 && this.bets.tie===0) { alert("Place a bet first!"); return; }
+      this.state = 'playing'; document.getElementById(`bac-msg_${this.id}`).style.display = 'none'; document.getElementById(`bac-msg_${this.id}`).classList.remove('is-flashing');
+      document.getElementById(`bac-btn-deal_${this.id}`).disabled = true; document.getElementById(`bac-btn-chip_${this.id}`).disabled = true; document.getElementById(`bac-btn-clear_${this.id}`).disabled = true;
+      
+      this.deck = this.getDeck(); this.pHand = []; this.bHand = []; this.updateUI();
+      
+      setTimeout(()=>{ this.pHand.push(this.deck.pop()); playSound('card'); this.updateUI(); }, 400);
+      setTimeout(()=>{ this.bHand.push(this.deck.pop()); playSound('card'); this.updateUI(); }, 800);
+      setTimeout(()=>{ this.pHand.push(this.deck.pop()); playSound('card'); this.updateUI(); }, 1200);
+      setTimeout(()=>{ this.bHand.push(this.deck.pop()); playSound('card'); this.updateUI(); 
+          setTimeout(() => this.evaluateThirdCard(), 800);
+      }, 1600);
+    }
+
+    evaluateThirdCard() {
+      let pVal = this.getVal(this.pHand); let bVal = this.getVal(this.bHand);
+      if (pVal >= 8 || bVal >= 8) { this.resolve(); return; } // Natural
+
+      let p3 = null; let sequence = [];
+      if (pVal <= 5) { p3 = this.deck.pop(); sequence.push({ target: 'p', card: p3 }); }
+      
+      let p3val = p3 ? (['10','J','Q','K'].includes(p3.val) ? 0 : (p3.val==='A'?1:parseInt(p3.val))) : -1;
+      let bDraws = false;
+      if (p3 === null) { bDraws = (bVal <= 5); } 
+      else {
+          if (bVal <= 2) bDraws = true; else if (bVal === 3) bDraws = (p3val !== 8); else if (bVal === 4) bDraws = (p3val >= 2 && p3val <= 7);
+          else if (bVal === 5) bDraws = (p3val >= 4 && p3val <= 7); else if (bVal === 6) bDraws = (p3val === 6 || p3val === 7);
+      }
+      if (bDraws) sequence.push({ target: 'b', card: this.deck.pop() });
+
+      let step = 0;
+      const playSeq = () => {
+          if (step < sequence.length) {
+              if (sequence[step].target === 'p') this.pHand.push(sequence[step].card); else this.bHand.push(sequence[step].card);
+              playSound('card'); this.updateUI(); step++; setTimeout(playSeq, 800);
+          } else { setTimeout(() => this.resolve(), 600); }
+      };
+      playSeq();
+    }
+
+    resolve() {
+      this.state = 'idle'; document.getElementById(`bac-btn-deal_${this.id}`).disabled = false; document.getElementById(`bac-btn-chip_${this.id}`).disabled = false; document.getElementById(`bac-btn-clear_${this.id}`).disabled = false;
+      let pVal = this.getVal(this.pHand); let bVal = this.getVal(this.bHand);
+      let isNat = (this.pHand.length===2 && pVal>=8) || (this.bHand.length===2 && bVal>=8);
+      let winner = pVal > bVal ? 'player' : (bVal > pVal ? 'banker' : 'tie');
+      let totalWin = 0; let msgs = [];
+
+      if (winner === 'player') {
+          msgs.push("PLAYER WINS"); 
+          if(this.bets.player > 0) totalWin += this.bets.player * 2;
+          if(U.bac_nat && isNat && this.bets.player > 0) totalWin += this.bets.player; 
+          if(U.bac_panda && pVal===8 && this.pHand.length===3 && this.bets.player > 0) { totalWin += this.bets.player * 26; msgs.push("PANDA 8!"); }
+      } else if (winner === 'banker') {
+          msgs.push("BANKER WINS");
+          if(this.bets.banker > 0) totalWin += this.bets.banker + (this.bets.banker * (U.bac_comm ? 1 : 0.95));
+          if(U.bac_nat && isNat && this.bets.banker > 0) totalWin += this.bets.banker;
+          if(U.bac_dragon && bVal===7 && this.bHand.length===3 && this.bets.banker > 0) { totalWin += this.bets.banker * 41; msgs.push("DRAGON 7!"); }
+      } else {
+          msgs.push("TIE");
+          if(this.bets.tie > 0) totalWin += this.bets.tie + (this.bets.tie * (U.bac_tie ? 10 : 8));
+          if(this.bets.player > 0) totalWin += this.bets.player; 
+          if(this.bets.banker > 0) totalWin += this.bets.banker; 
+      }
+
+      const msg = document.getElementById(`bac-msg_${this.id}`); msg.innerText = msgs.join(' ');
+      if (totalWin > (this.bets.player+this.bets.banker+this.bets.tie)) { msg.style.display = 'block'; msg.classList.add('is-flashing'); playSound('jackpot'); fireConfetti(); credits += totalWin; } 
+      else if (totalWin > 0) { msg.style.display = 'block'; msg.classList.add('is-flashing'); playSound('win'); credits += totalWin;}
+      else { msg.style.display = 'block'; msg.classList.add('is-flashing'); playSound('lose'); }
+      
+      this.bets = {player:0, banker:0, tie:0}; this.updateDisplay(); updateAllDisplays(); saveGame();
+      setTimeout(() => { msg.style.display = 'none'; msg.classList.remove('is-flashing'); }, 3000);
+    }
+  }
+  function launchBacGame() { if (U.bac_multi) new BaccaratTable(); else { const firstId = Object.keys(bacInstances)[0]; if (firstId) setWindowState(firstId, 'open'); else new BaccaratTable(); } }
+
+  /* =========================================
+     ROULETTE CLASS
+     ========================================= */
+  const rlInstances = {}; let rlCounter = 0;
+  class RouletteTable {
+    constructor() { rlCounter++; this.id = 'rl_' + rlCounter; this.betSize = 10; this.state = 'idle'; this.bets = {}; this.buildDOM(); }
+    buildDOM() {
+      const win = document.createElement('div'); win.className = 'window rlWindow'; win.id = this.id; win.dataset.title = `Roulette (${rlCounter})`;
+      const offset = (rlCounter % 10) * 25; win.style.top = (50 + offset) + "px"; win.style.left = (300 + offset) + "px";
+      
+      let gridHtml = `<div class="rl-grid">`;
+      gridHtml += `<div class="rl-cell green" style="grid-row: 1 / 4; grid-column: 1;" onclick="rlInstances['${this.id}'].placeBet('0')">0<div class="rl-chip" id="chip_0_${this.id}" style="display:none;"></div></div>`;
+      const row1 = [3,6,9,12,15,18,21,24,27,30,33,36]; const row2 = [2,5,8,11,14,17,20,23,26,29,32,35]; const row3 = [1,4,7,10,13,16,19,22,25,28,31,34];
+      const redNums = [1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36];
+      [row1, row2, row3].forEach((row, rIdx) => { row.forEach((n, cIdx) => { let c = redNums.includes(n) ? 'red' : 'black'; gridHtml += `<div class="rl-cell ${c}" style="grid-row: ${rIdx+1}; grid-column: ${cIdx+2};" onclick="rlInstances['${this.id}'].placeBet('${n}')">${n}<div class="rl-chip" id="chip_${n}_${this.id}" style="display:none;"></div></div>`; }); });
+      gridHtml += `<div class="rl-cell" style="grid-row: 4; grid-column: 2 / 6;" onclick="rlInstances['${this.id}'].placeBet('1st12')">1st 12<div class="rl-chip" id="chip_1st12_${this.id}" style="display:none;"></div></div>`;
+      gridHtml += `<div class="rl-cell" style="grid-row: 4; grid-column: 6 / 10;" onclick="rlInstances['${this.id}'].placeBet('2nd12')">2nd 12<div class="rl-chip" id="chip_2nd12_${this.id}" style="display:none;"></div></div>`;
+      gridHtml += `<div class="rl-cell" style="grid-row: 4; grid-column: 10 / 14;" onclick="rlInstances['${this.id}'].placeBet('3rd12')">3rd 12<div class="rl-chip" id="chip_3rd12_${this.id}" style="display:none;"></div></div>`;
+      gridHtml += `<div class="rl-cell" style="grid-row: 5; grid-column: 2 / 4;" onclick="rlInstances['${this.id}'].placeBet('1-18')">1 to 18<div class="rl-chip" id="chip_1-18_${this.id}" style="display:none;"></div></div>`;
+      gridHtml += `<div class="rl-cell" style="grid-row: 5; grid-column: 4 / 6;" onclick="rlInstances['${this.id}'].placeBet('even')">EVEN<div class="rl-chip" id="chip_even_${this.id}" style="display:none;"></div></div>`;
+      gridHtml += `<div class="rl-cell red" style="grid-row: 5; grid-column: 6 / 8;" onclick="rlInstances['${this.id}'].placeBet('red')">RED<div class="rl-chip" id="chip_red_${this.id}" style="display:none;"></div></div>`;
+      gridHtml += `<div class="rl-cell black" style="grid-row: 5; grid-column: 8 / 10;" onclick="rlInstances['${this.id}'].placeBet('black')">BLACK<div class="rl-chip" id="chip_black_${this.id}" style="display:none;"></div></div>`;
+      gridHtml += `<div class="rl-cell" style="grid-row: 5; grid-column: 10 / 12;" onclick="rlInstances['${this.id}'].placeBet('odd')">ODD<div class="rl-chip" id="chip_odd_${this.id}" style="display:none;"></div></div>`;
+      gridHtml += `<div class="rl-cell" style="grid-row: 5; grid-column: 12 / 14;" onclick="rlInstances['${this.id}'].placeBet('19-36')">19 to 36<div class="rl-chip" id="chip_19-36_${this.id}" style="display:none;"></div></div></div>`;
+
+      win.innerHTML = `
+        <div class="title-bar" onmousedown="dragMouseDown(event, '${this.id}')"><span>🎡 Casino Roulette (${rlCounter})</span><div class="title-bar-controls"><div class="title-btn" onclick="setWindowState('${this.id}', 'minimized')">_</div><div class="title-btn" onclick="toggleMaximize('${this.id}')">□</div><div class="title-btn" onclick="setWindowState('${this.id}', 'closed')">X</div></div></div>
+        <div class="game-container">
+          <div class="game-msg" id="rl-msg_${this.id}"></div>
+          <div class="rl-container">
+            <div class="rl-wheel-area"><div class="rl-wheel-box"><div class="rl-number-display green" id="rl-num_${this.id}">0</div></div><div class="rl-status" id="rl-status_${this.id}">PLACE YOUR BETS</div></div>
+            ${gridHtml}
+          </div>
+          <div class="control-panel">
+            <div class="displays"><div class="lcd">CR: <span id="rl-credits_${this.id}">${credits}</span></div><div class="lcd">CHIP: <span id="rl-bet_${this.id}">${this.betSize}</span></div></div>
+            <div class="buttons"><button class="btn btn-info" id="rl-btn-clear_${this.id}" onclick="rlInstances['${this.id}'].clearBets()">CLEAR</button><button class="btn btn-bet" id="rl-btn-bet_${this.id}" onclick="rlInstances['${this.id}'].changeBet()">CHIP UP</button><button class="btn btn-spin" id="rl-btn-spin_${this.id}" onclick="rlInstances['${this.id}'].spin()">SPIN WHEEL</button></div>
+          </div>
+        </div>`;
+      document.getElementById('desktop').appendChild(win); rlInstances[this.id] = this; this.updateDisplay(); setWindowState(this.id, 'open');
+    }
+
+    updateDisplay() { document.getElementById(`rl-credits_${this.id}`).innerText = credits; document.getElementById(`rl-bet_${this.id}`).innerText = this.betSize; }
+    changeBet() { initAudio(); if (this.state === 'idle') { this.betSize = this.betSize >= 500 ? 10 : this.betSize + 10; this.updateDisplay(); } }
+
+    placeBet(id) { if(this.state !== 'idle') return; if(credits < this.betSize) { alert("Not enough credits!"); return; } credits -= this.betSize; this.bets[id] = (this.bets[id] || 0) + this.betSize; playSound('click'); this.updateDisplay(); this.renderChips(); saveGame(); }
+    renderChips() { document.querySelectorAll(`[id^="chip_"][id$="_${this.id}"]`).forEach(c => c.style.display = 'none'); Object.keys(this.bets).forEach(id => { const el = document.getElementById(`chip_${id}_${this.id}`); if(el) { el.style.display = 'flex'; el.innerText = this.bets[id]; } }); }
+    clearBets() { if(this.state !== 'idle') return; let refund = 0; Object.values(this.bets).forEach(v => refund += v); if(refund > 0) { credits += refund; this.bets = {}; playSound('click'); this.updateDisplay(); this.renderChips(); saveGame(); } }
+
+    spin() {
+      initAudio(); if (Object.keys(this.bets).length === 0) { alert("Place a bet on the board first!"); return; }
+      this.state = 'spinning'; const msg = document.getElementById(`rl-msg_${this.id}`); msg.classList.remove('is-flashing'); msg.style.display = 'none';
+      document.getElementById(`rl-status_${this.id}`).innerText = "NO MORE BETS"; document.getElementById(`rl-btn-spin_${this.id}`).disabled = true; document.getElementById(`rl-btn-bet_${this.id}`).disabled = true; document.getElementById(`rl-btn-clear_${this.id}`).disabled = true;
+      let ticks = 0; let delay = 50; const numDisp = document.getElementById(`rl-num_${this.id}`);
+      const tickWheel = () => {
+        ticks++; playSound('tick'); let rNum = Math.floor(Math.random() * 37); numDisp.innerText = rNum;
+        if(rNum === 0) numDisp.className = "rl-number-display green"; else if ([1,3,5,7,9,12,14,16,18,19,21,23,25,27,30,32,34,36].includes(rNum)) numDisp.className = "rl-number-display red"; else numDisp.className = "rl-number-display black";
+        if (ticks < 30) { delay += 10; setTimeout(tickWheel, delay); } else { setTimeout(() => this.resolve(rNum, numDisp.className), 500); }
+      }; tickWheel();
+    }
+
+    resolve(resultNum, resultColorClass) {
+      this.state = 'idle'; document.getElementById(`rl-btn-spin_${this.id}`).disabled = false; document.getElementById(`rl-btn-bet_${this.id}`).disabled = false; document.getElementById(`rl-btn-clear_${this.id}`).disabled = false; document.getElementById(`rl-status_${this.id}`).innerText = "PLACE YOUR BETS";
+      let totalWin = 0; const outsideBets = ['red','black','even','odd','1-18','19-36','1st12','2nd12','3rd12'];
+      Object.keys(this.bets).forEach(id => {
+        let bAmt = this.bets[id]; let winMultiplier = 0;
+        if (id === 'red' && resultColorClass.includes('red')) winMultiplier = U.magnet ? 5 : 2;
+        else if (id === 'black' && resultColorClass.includes('black')) winMultiplier = U.magnet ? 5 : 2;
+        else if (id === 'even' && resultNum !== 0 && resultNum % 2 === 0) winMultiplier = U.magnet ? 5 : 2;
+        else if (id === 'odd' && resultNum !== 0 && resultNum % 2 !== 0) winMultiplier = U.magnet ? 5 : 2;
+        else if (id === '1-18' && resultNum >= 1 && resultNum <= 18) winMultiplier = U.magnet ? 5 : 2;
+        else if (id === '19-36' && resultNum >= 19 && resultNum <= 36) winMultiplier = U.magnet ? 5 : 2;
+        else if (id === '1st12' && resultNum >= 1 && resultNum <= 12) winMultiplier = 3;
+        else if (id === '2nd12' && resultNum >= 13 && resultNum <= 24) winMultiplier = 3;
+        else if (id === '3rd12' && resultNum >= 25 && resultNum <= 36) winMultiplier = 3;
+        else if (!isNaN(id) && parseInt(id) === resultNum) { if (U.lucky7 && resultNum === 7) winMultiplier = 501; else if (U.zerojackpot && resultNum === 0) winMultiplier = 51; else winMultiplier = U.golden ? 101 : 36; }
+        if (winMultiplier > 0) totalWin += bAmt * winMultiplier; else if (U.safety && resultNum === 0) totalWin += bAmt; 
+      });
+      const msg = document.getElementById(`rl-msg_${this.id}`);
+      if (totalWin > 0) { msg.innerText = "WINNER!"; msg.style.display = 'block'; msg.classList.add('is-flashing'); playSound('jackpot'); fireConfetti(); credits += totalWin; } 
+      else { msg.innerText = "LOSE"; msg.style.display = 'block'; msg.classList.add('is-flashing'); playSound('lose'); }
+      this.bets = {}; this.renderChips(); updateAllDisplays(); saveGame(); setTimeout(() => { msg.style.display = 'none'; msg.classList.remove('is-flashing'); }, 3000);
+    }
+  }
+  function launchRlGame() { if (U.rlmulti) new RouletteTable(); else { const firstId = Object.keys(rlInstances)[0]; if (firstId) setWindowState(firstId, 'open'); else new RouletteTable(); } }
+
+  /* =========================================
+     BLACKJACK CLASS
+     ========================================= */
+  const bjSuits = [{c:'♠', color:'black'}, {c:'♣', color:'black'}, {c:'♥', color:'red'}, {c:'♦', color:'red'}]; const bjValues = ['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+  const bjInstances = {}; let bjCounter = 0;
+  class BlackjackTable {
+    constructor() { bjCounter++; this.id = 'bj_' + bjCounter; this.bet = 50; this.state = 'idle'; this.deck = []; this.dealerHand = []; this.playerHands = []; this.currentHandIdx = 0; this.buildDOM(); }
+    buildDOM() {
+      const win = document.createElement('div'); win.className = 'window bjWindow'; win.id = this.id; win.dataset.title = `Blackjack (${bjCounter})`;
+      const offset = (bjCounter % 10) * 25; win.style.top = (60 + offset) + "px"; win.style.left = (400 + offset) + "px";
+      win.innerHTML = `
+        <div class="title-bar" onmousedown="dragMouseDown(event, '${this.id}')"><span>🃏 Casino Blackjack (${bjCounter})</span><div class="title-bar-controls"><div class="title-btn" onclick="setWindowState('${this.id}', 'minimized')">_</div><div class="title-btn" onclick="toggleMaximize('${this.id}')">□</div><div class="title-btn" onclick="setWindowState('${this.id}', 'closed')">X</div></div></div>
+        <div class="game-container">
+          <div class="game-msg" id="bj-msg_${this.id}"></div>
+          <div class="bj-felt">
+            <div class="bj-area"><div class="bj-label">DEALER <span id="bj-dealer-score_${this.id}"></span></div><div class="bj-cards" id="bj-dealer-cards_${this.id}"></div></div>
+            <div class="bj-area"><div class="bj-label">PLAYER <span id="bj-player-score_${this.id}"></span></div><div class="bj-hands-container" id="bj-player-hands_${this.id}"><div class="bj-cards" id="bj-player-cards-0_${this.id}"></div></div></div>
+          </div>
+          <div class="control-panel">
+            <div class="displays"><div class="lcd">CR: <span id="bj-credits_${this.id}">${credits}</span></div><div class="lcd">BET: <span id="bj-bet_${this.id}">${this.bet}</span></div></div>
+            <div class="buttons"><button class="btn btn-bet" id="bj-btn-bet_${this.id}" onclick="bjInstances['${this.id}'].changeBet()">BET UP</button><button class="btn btn-spin" id="bj-btn-deal_${this.id}" onclick="bjInstances['${this.id}'].deal()">DEAL</button><button class="btn" id="bj-btn-hit_${this.id}" onclick="bjInstances['${this.id}'].hit()" disabled>HIT</button><button class="btn" id="bj-btn-stand_${this.id}" onclick="bjInstances['${this.id}'].stand()" disabled>STAND</button><button class="btn btn-info" id="bj-btn-double_${this.id}" onclick="bjInstances['${this.id}'].doubleDown()" disabled>DOUBLE</button><button class="btn btn-info" id="bj-btn-split_${this.id}" onclick="bjInstances['${this.id}'].split()" disabled>SPLIT</button></div>
+          </div>
+        </div>`;
+      document.getElementById('desktop').appendChild(win); bjInstances[this.id] = this; this.updateDisplay(); setWindowState(this.id, 'open');
+    }
+
+    updateDisplay() { document.getElementById(`bj-credits_${this.id}`).innerText = credits; document.getElementById(`bj-bet_${this.id}`).innerText = this.bet; }
+    changeBet() { initAudio(); if (this.state === 'idle') { this.bet = this.bet >= 500 ? 50 : this.bet + 50; this.updateDisplay(); } }
+    getDeck() { let d = []; bjSuits.forEach(s => bjValues.forEach(v => d.push({ suit: s, val: v }))); return d.sort(() => Math.random() - 0.5); }
+    cardVal(hand) { let total = 0; let aces = 0; hand.forEach(c => { if (c.val === 'A') { aces += 1; total += 11; } else if (['J','Q','K'].includes(c.val)) total += 10; else total += parseInt(c.val); }); while(total > 21 && aces > 0) { total -= 10; aces -= 1; } return total; }
+    renderCard(c, hidden = false) { if (hidden && !U.xray) return `<div class="card hidden"></div>`; if (hidden && U.xray) return `<div class="card ${c.suit.color}" style="background: #e0e0e0; opacity: 0.8;"><div class="tl">${c.val}</div><div class="center">${c.suit.c}</div><div class="br">${c.val}</div></div>`; return `<div class="card ${c.suit.color}"><div class="tl">${c.val}</div><div class="center">${c.suit.c}</div><div class="br">${c.val}</div></div>`; }
+
+    updateUI(hideDealerCard = false) {
+      const dArea = document.getElementById(`bj-dealer-cards_${this.id}`); const pHandsArea = document.getElementById(`bj-player-hands_${this.id}`);
+      dArea.innerHTML = ''; pHandsArea.innerHTML = '';
+      this.dealerHand.forEach((c, i) => dArea.innerHTML += this.renderCard(c, hideDealerCard && i === 1));
+      document.getElementById(`bj-dealer-score_${this.id}`).innerText = hideDealerCard && !U.xray ? `(?)` : `(${this.cardVal(this.dealerHand)})`;
+
+      this.playerHands.forEach((hand, idx) => {
+        let handHtml = `<div class="bj-cards ${this.state === 'playing' && this.currentHandIdx === idx ? 'active-hand' : ''}">`;
+        hand.forEach(c => handHtml += this.renderCard(c)); handHtml += `</div>`; pHandsArea.innerHTML += handHtml;
+      });
+
+      let displayScore = this.playerHands.length > 0 ? this.cardVal(this.playerHands[this.currentHandIdx || 0]) : 0;
+      document.getElementById(`bj-player-score_${this.id}`).innerText = `(${displayScore})`;
+
+      let canSplit = this.state === 'playing' && this.playerHands.length === 1 && this.playerHands[0].length === 2 && this.playerHands[0][0].val === this.playerHands[0][1].val && credits >= this.bet;
+      let canDouble = this.state === 'playing' && this.playerHands.length === 1 && this.playerHands[0].length === 2 && credits >= this.bet;
+
+      document.getElementById(`bj-btn-hit_${this.id}`).disabled = this.state !== 'playing'; document.getElementById(`bj-btn-stand_${this.id}`).disabled = this.state !== 'playing';
+      document.getElementById(`bj-btn-deal_${this.id}`).disabled = this.state === 'playing'; document.getElementById(`bj-btn-bet_${this.id}`).disabled = this.state === 'playing';
+      document.getElementById(`bj-btn-double_${this.id}`).disabled = !canDouble; document.getElementById(`bj-btn-split_${this.id}`).disabled = !canSplit;
+    }
+
+    deal() {
+      initAudio(); if (credits < this.bet) { alert("Insert more coins!"); return; } credits -= this.bet; updateAllDisplays(); playSound('card');
+      const msg = document.getElementById(`bj-msg_${this.id}`); msg.classList.remove('is-flashing'); msg.style.display = 'none';
+      this.deck = this.getDeck(); this.dealerHand = [this.deck.pop(), this.deck.pop()]; this.playerHands = [ [this.deck.pop(), this.deck.pop()] ]; this.currentHandIdx = 0;
+      this.state = 'playing'; this.updateUI(true); saveGame();
+      if (this.cardVal(this.playerHands[0]) === 21) { this.state = 'over'; setTimeout(() => this.endGame('blackjack'), 500); }
+    }
+
+    hit() {
+      playSound('card'); let hand = this.playerHands[this.currentHandIdx]; hand.push(this.deck.pop()); this.updateUI(true);
+      if (this.cardVal(hand) > 21) { if (this.currentHandIdx < this.playerHands.length - 1) { this.currentHandIdx++; this.updateUI(true); } else { this.state = 'over'; setTimeout(() => this.endGame('bust'), 500); } } 
+      else if (U.charlie && hand.length === 5) { this.state = 'over'; setTimeout(() => this.endGame('charlie'), 500); }
+    }
+
+    doubleDown() {
+      if (credits < this.bet) return; credits -= this.bet; updateAllDisplays(); playSound('buy');
+      let hand = this.playerHands[0]; hand.betMultiplier = 2; hand.push(this.deck.pop()); this.updateUI(true);
+      if (this.cardVal(hand) > 21) { this.state = 'over'; setTimeout(() => this.endGame('bust'), 500); } else { this.stand(); }
+    }
+
+    split() {
+      if (credits < this.bet) return; credits -= this.bet; updateAllDisplays(); playSound('buy');
+      let hand1 = [this.playerHands[0][0], this.deck.pop()]; let hand2 = [this.playerHands[0][1], this.deck.pop()];
+      this.playerHands = [hand1, hand2]; this.currentHandIdx = 0; this.updateUI(true);
+    }
+
+    stand() {
+      if (this.currentHandIdx < this.playerHands.length - 1) { this.currentHandIdx++; this.updateUI(true); return; }
+      this.state = 'over'; this.updateUI(false);
+      const playDealer = () => { if (this.cardVal(this.dealerHand) < 17) { playSound('card'); this.dealerHand.push(this.deck.pop()); this.updateUI(false); setTimeout(playDealer, 600); } else { setTimeout(() => this.endGame('resolve'), 500); } }
+      setTimeout(playDealer, 500);
+    }
+
+    endGame(result) {
+      this.state = 'idle'; this.updateUI(false); const dScore = this.cardVal(this.dealerHand); let totalPayout = 0; let msgs = [];
+      this.playerHands.forEach(hand => {
+        let pScore = this.cardVal(hand); let betMult = hand.betMultiplier || 1; let handBet = this.bet * betMult;
+        if (pScore > 21) { msgs.push("BUST"); playSound('lose'); }
+        else if (result === 'blackjack') { 
+            let isSuited = (hand[0].suit.c === hand[1].suit.c); let bjMult = (U.suited && isSuited) ? 3 : 2.5;
+            msgs.push(dScore === 21 ? "PUSH" : "BLACKJACK!"); if(dScore !== 21) { totalPayout += handBet * bjMult; playSound('jackpot'); fireConfetti(); } else { totalPayout += handBet * (U.tiebreaker?2:1); if(U.tiebreaker) playSound('win');} 
+        }
+        else if (result === 'charlie') { msgs.push("5-CARD CHARLIE!"); totalPayout += handBet * 2; playSound('jackpot'); fireConfetti(); }
+        else {
+          if (dScore > 21) { msgs.push("DEALER BUST"); totalPayout += handBet * (U.insurance ? 2.5 : 2); playSound('win'); }
+          else if (pScore > dScore) { msgs.push("WIN"); totalPayout += handBet * 2; playSound('win'); }
+          else if (pScore < dScore) { msgs.push("LOSE"); playSound('lose'); }
+          else { msgs.push("PUSH"); totalPayout += handBet * (U.tiebreaker?2:1); if(U.tiebreaker) playSound('win'); }
+        }
+      });
+      const msg = document.getElementById(`bj-msg_${this.id}`); msg.innerText = msgs.join(" & "); msg.style.display = 'block'; msg.classList.add('is-flashing');
+      if (totalPayout > 0) { credits += totalPayout; updateAllDisplays(); } saveGame(); setTimeout(() => { msg.style.display = 'none'; msg.classList.remove('is-flashing'); }, 3000);
+    }
+  }
+  function launchBjGame() { if (U.bjmulti) new BlackjackTable(); else { const firstId = Object.keys(bjInstances)[0]; if (firstId) setWindowState(firstId, 'open'); else new BlackjackTable(); } }
+
+  /* =========================================
+     SLOT MACHINE CLASS
+     ========================================= */
+  let symbols = [ { char: '7', class: 's-seven', weight: 1 }, { char: '🍉', class: '', weight: 6 }, { char: '🍇', class: '', weight: 12 }, { char: '🍋', class: '', weight: 18 }, { char: '🍒', class: '', weight: 24 } ];
+  function getWeightedSymbol() { let totalWeight = symbols.reduce((sum, sym) => sum + sym.weight, 0); let random = Math.random() * totalWeight; for (let i = 0; i < symbols.length; i++) { if (random < symbols[i].weight) return symbols[i]; random -= symbols[i].weight; } return symbols[symbols.length - 1]; }
+  function getTranslateY(el) { const style = window.getComputedStyle(el); const transform = style.transform || style.webkitTransform || style.mozTransform; if (!transform || transform === 'none') return 0; const mat = transform.match(/^matrix\((.+)\)$/); if (mat) return parseFloat(mat[1].split(', ')[5]); const mat3d = transform.match(/^matrix3d\((.+)\)$/); if (mat3d) return parseFloat(mat3d[1].split(', ')[13]); return 0; }
+  
+  const slotInstances = {}; let slotCounter = 0;
+  class SlotMachine {
+    constructor() { slotCounter++; this.id = 'slot_' + slotCounter; this.bet = 10; this.isSpinning = false; this.isAuto = false; this.reelStatus = [false, false, false, false]; this.reelTimers = []; this.flashTimer = null; this.buildDOM(); }
+    buildDOM() {
+      const win = document.createElement('div'); win.className = 'window slotWindow'; win.id = this.id; win.dataset.title = `The Money Game (${slotCounter})`;
+      const offset = (slotCounter % 10) * 25; win.style.top = (40 + offset) + "px"; win.style.left = (80 + offset) + "px";
+      win.innerHTML = `
+        <div class="title-bar" onmousedown="dragMouseDown(event, '${this.id}')"><span>🎰 The Money Game (${slotCounter})</span><div class="title-bar-controls"><div class="title-btn" onclick="setWindowState('${this.id}', 'minimized')">_</div><div class="title-btn" onclick="toggleMaximize('${this.id}')">□</div><div class="title-btn" onclick="setWindowState('${this.id}', 'closed')">X</div></div></div>
+        <div class="game-container">
+          <div class="game-msg" id="jackpotText_${this.id}">JACKPOT!</div>
+          <div class="reels-wrapper">
+            <div class="reel" onclick="slotInstances['${this.id}'].stopReel(0)"><div class="reel-strip" id="r0_${this.id}"></div></div>
+            <div class="reel" onclick="slotInstances['${this.id}'].stopReel(1)"><div class="reel-strip" id="r1_${this.id}"></div></div>
+            <div class="reel" onclick="slotInstances['${this.id}'].stopReel(2)"><div class="reel-strip" id="r2_${this.id}"></div></div>
+            <div class="reel" id="reel-4_${this.id}" onclick="slotInstances['${this.id}'].stopReel(3)" style="display: ${U.reel?'block':'none'};"><div class="reel-strip" id="r3_${this.id}"></div></div>
+          </div>
+          <div class="control-panel">
+            <div class="displays"><div class="lcd">CR: <span id="display-credits_${this.id}">${credits}</span></div><div class="lcd">BET: <span id="display-bet_${this.id}">${this.bet}</span></div><div class="lcd">WIN: <span id="display-win_${this.id}">0</span></div></div>
+            <div class="buttons"><button class="btn btn-auto" id="btn-auto_${this.id}" onclick="slotInstances['${this.id}'].toggleAuto()">AUTO</button><button class="btn btn-bet" onclick="slotInstances['${this.id}'].changeBet()">BET UP</button><button class="btn btn-spin" onclick="slotInstances['${this.id}'].handleSpinClick()" id="spinBtn_${this.id}">SPIN</button></div>
+          </div>
+        </div>`;
+      document.getElementById('desktop').appendChild(win); slotInstances[this.id] = this;
+      this.reels().forEach((strip) => { let html = ''; for (let i = 0; i < 3; i++) { let sym = symbols[i]; html += `<div class="symbol ${sym.class}">${sym.char}</div>`; } strip.innerHTML = html; });
+      this.updateDisplay(); setWindowState(this.id, 'open');
+    }
+    reels() { let r = [document.getElementById(`r0_${this.id}`), document.getElementById(`r1_${this.id}`), document.getElementById(`r2_${this.id}`)]; if (U.reel) r.push(document.getElementById(`r3_${this.id}`)); return r; }
+    updateDisplay() { document.getElementById(`display-credits_${this.id}`).innerText = credits; document.getElementById(`display-bet_${this.id}`).innerText = globalFreeSpins > 0 ? "FREE" : this.bet; document.getElementById(`spinBtn_${this.id}`).innerText = globalFreeSpins > 0 ? `SPIN (${globalFreeSpins})` : "SPIN"; }
+    changeBet() { initAudio(); if (!this.isSpinning && globalFreeSpins === 0) { this.bet = this.bet >= 100 ? 10 : this.bet + 10; this.updateDisplay(); } }
+    toggleAuto() { initAudio(); this.isAuto = !this.isAuto; document.getElementById(`btn-auto_${this.id}`).classList.toggle('active-toggle', this.isAuto); if (this.isAuto && !this.isSpinning) this.spin(); }
+    handleSpinClick() { initAudio(); if (!this.isSpinning) this.spin(); else this.stopAll(); }
+
+    spin() {
+      if (credits < this.bet && globalFreeSpins === 0) { alert("Insert more coins!"); this.isAuto = false; document.getElementById(`btn-auto_${this.id}`).classList.remove('active-toggle'); return; }
+      this.isSpinning = true; if (globalFreeSpins > 0) globalFreeSpins--; else credits -= this.bet;
+      
+      const msg = document.getElementById(`jackpotText_${this.id}`); if(this.flashTimer) clearTimeout(this.flashTimer); msg.classList.remove('is-flashing'); msg.style.display = 'none';
+      document.getElementById(`display-win_${this.id}`).innerText = "0"; updateAllDisplays();
+
+      this.reelStatus = [true, true, true, U.reel];
+      this.reels().forEach((strip, i) => {
+        let html = ''; for (let j = 0; j < 40; j++) { let sym = globalFireworkActive ? symbols[0] : getWeightedSymbol(); html += `<div class="symbol ${sym.class}">${sym.char}</div>`; }
+        strip.innerHTML = html; strip.style.transition = 'none'; strip.style.transform = `translateY(0px)`; strip.getBoundingClientRect(); 
+        setTimeout(() => { strip.style.transition = `transform 4s cubic-bezier(0.1, 0, 0.1, 1)`; strip.style.transform = `translateY(-2960px)`; this.reelTimers[i] = setTimeout(() => this.stopReel(i), 1000 + (i * 400)); }, 50);
+      });
+      globalFireworkActive = false; saveGame();
+    }
+
+    stopReel(i) {
+      if (!this.reelStatus[i]) return;
+      const strip = document.getElementById(`r${i}_${this.id}`); const currentY = getTranslateY(strip);
+      strip.style.transition = 'none'; strip.style.transform = `translateY(${currentY}px)`;
+      const snappedPos = Math.round(currentY / 80) * 80; strip.getBoundingClientRect(); 
+      strip.style.transition = 'transform 0.1s ease-out'; strip.style.transform = `translateY(${snappedPos}px)`;
+      playSound('click'); this.reelStatus[i] = false; clearTimeout(this.reelTimers[i]);
+      let allStopped = true; for(let j=0; j<(U.reel?4:3); j++) { if (this.reelStatus[j]) allStopped = false; }
+      if (allStopped) this.finalizeSpin();
+    }
+    stopAll() { this.reels().forEach((_, i) => this.stopReel(i)); }
+
+    finalizeSpin() {
+      this.isSpinning = false;
+      const results = this.reels().map(strip => { const currentY = getTranslateY(strip); const idx = Math.abs(Math.round(currentY / 80)) + 1; return strip.children[idx].innerText; });
+      let winMultiplier = 0; const r1 = results[0]; const r2 = results[1]; const r3 = results[2]; const r4 = results[3]; const cherryCount = results.filter(sym => sym === '🍒').length;
+
+      if (U.reel && r1 === r2 && r2 === r3 && r3 === r4) { if (r1 === '7') winMultiplier = 250; else if (r1 === '🍉') winMultiplier = 100; else if (r1 === '🍇') winMultiplier = 75; else if (r1 === '🍋') winMultiplier = 50; else if (r1 === '🍒') winMultiplier = 25; } 
+      else if (r1 === r2 && r2 === r3) { if (r1 === '7') winMultiplier = 50; else if (r1 === '🍉') winMultiplier = 20; else if (r1 === '🍇') winMultiplier = 15; else if (r1 === '🍋') winMultiplier = 10; else if (r1 === '🍒') winMultiplier = 5; } 
+      else if (cherryCount >= 2) winMultiplier = 2; else if (cherryCount === 1) winMultiplier = 1;
+
+      if (U.dice && winMultiplier > 0) winMultiplier = Math.floor(winMultiplier * 1.5);
+
+      if (winMultiplier > 0) {
+        const winAmount = this.bet * winMultiplier; credits += winAmount; document.getElementById(`display-win_${this.id}`).innerText = winAmount; updateAllDisplays();
+        const msg = document.getElementById(`jackpotText_${this.id}`);
+        if (winMultiplier >= 20) { msg.innerText = "JACKPOT!"; playSound('jackpot'); fireConfetti(); } else { msg.innerText = "WINNER!"; playSound('win'); }
+        msg.style.display = 'block'; msg.classList.add('is-flashing'); this.flashTimer = setTimeout(() => { msg.classList.remove('is-flashing'); msg.style.display = 'none'; }, 3000);
+        if (this.isAuto) setTimeout(() => { this.toggleAuto(); }, 100); 
+      } else if (this.isAuto) { setTimeout(() => this.spin(), 500); }
+      saveGame();
+    }
+  }
+  function launchSlotGame() { if (U.multi) new SlotMachine(); else { const firstId = Object.keys(slotInstances)[0]; if (firstId) setWindowState(firstId, 'open'); else new SlotMachine(); } }
+
+  loadGame(); 
+</script>
+</body>
+</html>
