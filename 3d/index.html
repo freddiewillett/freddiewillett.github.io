@@ -3,16 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Model Viewer</title>
+    <title>Elastic 3D Model Viewer</title>
     <style>
-        body {
-            margin: 0;
-            overflow: hidden; /* Prevent scrollbars */
-            background-color: #f0f0f0; /* Optional: Light gray background */
-        }
-        canvas {
-            display: block; /* Removes default inline spacing */
-        }
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; touch-action: none; cursor: grab; }
+        canvas:active { cursor: grabbing; }
     </style>
 </head>
 <body>
@@ -31,104 +26,198 @@
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
         import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-        // ------------------------------------------------
-        // 1. CONFIGURATION: EDIT THIS SECTION
-        // ------------------------------------------------
-        
-        // RELACE 'model.glb' with the actual filename of your 3D model
+        // --- CONFIGURATION ---
         const MODEL_PATH = 'model.glb'; 
-        
-        const BACKGROUND_COLOR = 0xf0f0f0;
-        const LIGHT_INTENSITY = 2;
+        const STRETCH_RADIUS = 1.5; // How wide the "grab" area is
+        const STRETCH_STRENGTH = 1.0; // How far it pulls
 
-        // ------------------------------------------------
-        // 2. SETUP SCENE, CAMERA, AND RENDERER
-        // ------------------------------------------------
+        // --- 1. SETUP SCENE ---
         const scene = new THREE.Scene();
-        // Generate a random background color (using HSL makes it easier to keep it soft/dark)
-        const bgColor = new THREE.Color().setHSL(Math.random(), 0.2, 0.9); // Light, desaturated color
-        scene.background = bgColor;
+        scene.background = new THREE.Color().setHSL(Math.random(), 0.3, 0.8);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        camera.position.z = 5; // Initial camera position (moves back to see model)
+        camera.position.z = 5;
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio); // Sharpness on high DPI screens
+        renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
 
-        // ------------------------------------------------
-        // 3. LIGHTING
-        // ------------------------------------------------
-        
-        // Ambient light (soft general light)
-        const ambientLight = new THREE.AmbientLight(0xffffff, 1); 
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.2); 
         scene.add(ambientLight);
-
-        // Directional light (simulates sun/lamp)
-        const dirLight = new THREE.DirectionalLight(0xffffff, LIGHT_INTENSITY);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
         dirLight.position.set(5, 10, 7.5);
         scene.add(dirLight);
 
-        // ------------------------------------------------
-        // 4. LOAD THE MODEL
-        // ------------------------------------------------
-        
+        // --- 2. LOAD MODEL & PREPARE FOR STRETCHING ---
         const loader = new GLTFLoader();
-        
+        const interactableMeshes = [];
+
         loader.load(MODEL_PATH, (gltf) => {
             const model = gltf.scene;
-        
-            // Generate a vibrant random color for the model
-            // Using HSL: (Hue 0-1, Saturation 0.7, Lightness 0.5) ensures it's always colorful
-            const modelColor = new THREE.Color().setHSL(Math.random(), 0.7, 0.5);
-        
+            const modelColor = new THREE.Color().setHSL(Math.random(), 0.8, 0.5);
+
             model.traverse((node) => {
                 if (node.isMesh) {
-                    // Remove existing textures so the random color is solid and bright
                     node.material.map = null; 
                     node.material.color = modelColor;
-                    
-                    // Optional: Make it slightly shiny
-                    if (node.material.roughness !== undefined) node.material.roughness = 0.3;
+
+                    // Ensure geometry is non-indexed for easier vertex manipulation
+                    let geometry = node.geometry;
+                    if (geometry.index) {
+                        geometry = geometry.toNonIndexed();
+                        node.geometry = geometry;
+                    }
+
+                    // Store original vertex positions so they can snap back
+                    node.userData.originalPositions = geometry.attributes.position.clone();
+                    node.userData.isRecovering = false;
+                    interactableMeshes.push(node);
                 }
             });
-        
-            // --- AUTO-CENTERING LOGIC ---
+
+            // Auto-Center
             const box = new THREE.Box3().setFromObject(model);
             const center = box.getCenter(new THREE.Vector3());
-            model.position.x += (model.position.x - center.x);
-            model.position.y += (model.position.y - center.y);
-            model.position.z += (model.position.z - center.z);
-        
+            model.position.sub(center);
+
             scene.add(model);
-        
-        }, undefined, (error) => {
-            console.error('An error occurred:', error);
         });
 
-        // ------------------------------------------------
-        // 5. CONTROLS (INTERACTION + ROTATION)
-        // ------------------------------------------------
-        
+        // --- 3. CONTROLS ---
         const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true; // Smooths the movement
+        controls.enableDamping = true;
         controls.dampingFactor = 0.05;
-        controls.autoRotate = true;    // Enables the slow rotation
-        controls.autoRotateSpeed = 2.0; // Adjust speed (2.0 is default)
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 2.0;
+        
+        // Disable left click rotation, set right click to Pan, scroll is zoom by default
+        controls.mouseButtons = {
+            LEFT: null, 
+            MIDDLE: THREE.MOUSE.DOLLY,
+            RIGHT: THREE.MOUSE.PAN
+        };
 
-        // ------------------------------------------------
-        // 6. ANIMATION LOOP & RESIZE
-        // ------------------------------------------------
+        // --- 4. THE MARIO 64 STRETCH LOGIC ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        
+        let isDragging = false;
+        let grabbedMesh = null;
+        let localHitPoint = new THREE.Vector3();
+        
+        // An invisible plane facing the camera to calculate 3D mouse drag distance
+        const dragPlane = new THREE.Plane();
+        const planeIntersect = new THREE.Vector3();
+        const dragOffset = new THREE.Vector3();
+        const startDragPos = new THREE.Vector3();
 
+        window.addEventListener('pointerdown', (event) => {
+            if (event.button !== 0) return; // Only trigger on Left Click
+            
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(interactableMeshes);
+
+            if (intersects.length > 0) {
+                isDragging = true;
+                controls.autoRotate = false; // Stop spinning while grabbing
+                grabbedMesh = intersects[0].object;
+                
+                // Convert hit point to the mesh's local space
+                localHitPoint.copy(intersects[0].point);
+                grabbedMesh.worldToLocal(localHitPoint);
+
+                // Setup the invisible drag plane at the intersection point, facing the camera
+                dragPlane.setFromNormalAndCoplanarPoint(camera.getWorldDirection(dragPlane.normal), intersects[0].point);
+                raycaster.ray.intersectPlane(dragPlane, startDragPos);
+                dragOffset.set(0,0,0);
+            }
+        });
+
+        window.addEventListener('pointermove', (event) => {
+            if (!isDragging || !grabbedMesh) return;
+
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            
+            raycaster.setFromCamera(mouse, camera);
+            raycaster.ray.intersectPlane(dragPlane, planeIntersect);
+            
+            // Calculate how far the mouse has moved in 3D space
+            dragOffset.subVectors(planeIntersect, startDragPos).multiplyScalar(STRETCH_STRENGTH);
+            
+            // Convert drag offset to local space
+            const localOffset = dragOffset.clone();
+            grabbedMesh.worldToLocal(localOffset.add(grabbedMesh.position)).sub(grabbedMesh.position);
+
+            const positions = grabbedMesh.geometry.attributes.position;
+            const originals = grabbedMesh.userData.originalPositions;
+            const vertex = new THREE.Vector3();
+
+            // Loop through vertices and pull the ones near the hit point
+            for (let i = 0; i < positions.count; i++) {
+                vertex.fromBufferAttribute(originals, i);
+                const distance = vertex.distanceTo(localHitPoint);
+
+                if (distance < STRETCH_RADIUS) {
+                    // Smooth falloff: closer to center = pulled more
+                    const weight = 1 - (distance / STRETCH_RADIUS);
+                    vertex.addScaledVector(localOffset, weight);
+                    positions.setXYZ(i, vertex.x, vertex.y, vertex.z);
+                }
+            }
+            positions.needsUpdate = true;
+            grabbedMesh.geometry.computeVertexNormals(); // Fix lighting on stretched geometry
+        });
+
+        window.addEventListener('pointerup', () => {
+            if (isDragging) {
+                isDragging = false;
+                controls.autoRotate = true;
+                if (grabbedMesh) grabbedMesh.userData.isRecovering = true;
+                grabbedMesh = null;
+            }
+        });
+
+        // --- 5. ANIMATION & RECOVERY LOOP ---
         function animate() {
             requestAnimationFrame(animate);
-            controls.update(); // Required for damping and autoRotate
+            controls.update();
+
+            // Snap vertices back to original shape when released
+            interactableMeshes.forEach(mesh => {
+                if (mesh.userData.isRecovering && mesh !== grabbedMesh) {
+                    const positions = mesh.geometry.attributes.position;
+                    const originals = mesh.userData.originalPositions;
+                    const vertex = new THREE.Vector3();
+                    const origVertex = new THREE.Vector3();
+                    let stillRecovering = false;
+
+                    for (let i = 0; i < positions.count; i++) {
+                        vertex.fromBufferAttribute(positions, i);
+                        origVertex.fromBufferAttribute(originals, i);
+                        
+                        // Lerp (smoothly snap back)
+                        vertex.lerp(origVertex, 0.15); 
+                        positions.setXYZ(i, vertex.x, vertex.y, vertex.z);
+
+                        if (vertex.distanceTo(origVertex) > 0.01) stillRecovering = true;
+                    }
+                    
+                    positions.needsUpdate = true;
+                    mesh.geometry.computeVertexNormals();
+                    
+                    if (!stillRecovering) mesh.userData.isRecovering = false;
+                }
+            });
+
             renderer.render(scene, camera);
         }
         animate();
 
-        // Handle window resizing
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
