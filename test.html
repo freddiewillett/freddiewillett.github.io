@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Personal Website - 3D Landing Page</title>
+    <title>testbranch</title>
     <style>
         body {
             margin: 0;
@@ -39,9 +39,6 @@
         controls.minDistance = 10;
         controls.maxDistance = 50;
 
-        // ==========================================
-        // 1. LIGHTING
-        // ==========================================
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
         scene.add(ambientLight);
 
@@ -74,16 +71,13 @@
         const starMesh = new THREE.Points(starsGeo, starsMaterial);
         scene.add(starMesh);
 
-        // ==========================================
-        // 2. TEXTURED GLOBE & CAPE BRETON PIN
-        // ==========================================
         const globeGroup = new THREE.Group();
         scene.add(globeGroup);
 
         const globeRadius = 6.0;
 
         const textureLoader = new THREE.TextureLoader();
-        const earthTexture = textureLoader.load('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg');
+        const earthTexture = textureLoader.load('./models/map.jpg');
 
         const earthGeometry = new THREE.SphereGeometry(globeRadius, 64, 64);
         const earthMaterial = new THREE.MeshStandardMaterial({ 
@@ -92,41 +86,38 @@
             metalness: 0.1
         });
         const earth = new THREE.Mesh(earthGeometry, earthMaterial);
-        earth.rotation.y = -Math.PI / 2; 
+        
         globeGroup.add(earth);
 
         const pinGroup = new THREE.Group();
         
         const lat = 46.13;
         const lon = -60.19;
-        const textureLongitudeOffset = 0; 
+        const textureLongitudeOffset = 90; 
         
         const phi = (90 - lat) * (Math.PI / 180);
         const theta = (lon + textureLongitudeOffset) * (Math.PI / 180);
 
-        const px = -(globeRadius * Math.sin(phi) * Math.cos(theta));
-        const pz = (globeRadius * Math.sin(phi) * Math.sin(theta));
+        const px = globeRadius * Math.sin(phi) * Math.cos(theta);
         const py = globeRadius * Math.cos(phi);
+        const pz = globeRadius * Math.sin(phi) * Math.sin(theta);
 
         pinGroup.position.set(px, py, pz);
         pinGroup.lookAt(0, 0, 0); 
 
         const pinMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000, roughness: 0.2, metalness: 0.5 });
         
-        const pinCone = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.6, 16), pinMaterial);
+        const pinCone = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.8, 16), pinMaterial);
         pinCone.rotation.x = -Math.PI / 2; 
-        pinCone.position.z = 0.3; 
+        pinCone.position.z = 0.4; 
         pinGroup.add(pinCone);
         
-        const pinHead = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 16), pinMaterial);
-        pinHead.position.z = 0.6; 
+        const pinHead = new THREE.Mesh(new THREE.SphereGeometry(0.3, 16, 16), pinMaterial);
+        pinHead.position.z = 0.8; 
         pinGroup.add(pinHead);
 
-        globeGroup.add(pinGroup);
+        earth.add(pinGroup);
 
-        // ==========================================
-        // 3. 3D TEXT BAND
-        // ==========================================
         const textBandGroup = new THREE.Group();
         textBandGroup.rotation.x = 0.15; 
         scene.add(textBandGroup);
@@ -134,7 +125,7 @@
         const textMeshes = [];
         const fontLoader = new THREE.FontLoader();
         fontLoader.load('https://threejs.org/examples/fonts/helvetiker_bold.typeface.json', function (font) {
-            const textStr = "PLACEHOLDER TEXT  •  PLACEHOLDER TEXT  •  ";
+            const textStr = "FREDDIE WILLETT  •  FREDDIE WILLETT  •  ";
             const textRadius = 7.5; 
 
             for (let i = 0; i < textStr.length; i++) {
@@ -174,14 +165,9 @@
             }
         });
 
-        // ==========================================
-        // 4. FLYING 3D MODELS (AUTOSCALED)
-        // ==========================================
         const gltfLoader = new THREE.GLTFLoader();
         const orbitingObjects = [];
 
-        // Now using "targetSize" (in Three.js world units) instead of a blind multiplier.
-        // The globe has a diameter of 12.0 for reference.
         const modelConfigs = [
             { file: 'satellite.glb', count: 3, distMin: 6.8, distMax: 7.5, speed: 0.006, targetSize: 1.5 },
             { file: 'sputnik.glb',   count: 2, distMin: 6.5, distMax: 7.2, speed: 0.007, targetSize: 1.0 },
@@ -197,28 +183,21 @@
                 gltfLoader.load(`./models/${config.file}`, function(gltf) {
                     const model = gltf.scene;
 
-                    // --- NEW BOUNDING BOX NORMALIZATION LOGIC ---
-                    // 1. Find the current physical size of the loaded model
                     const box = new THREE.Box3().setFromObject(model);
                     const size = box.getSize(new THREE.Vector3());
                     
-                    // 2. Find the largest dimension (x, y, or z)
                     const maxDim = Math.max(size.x, size.y, size.z);
                     
-                    // 3. Scale it up or down so its largest edge equals our targetSize
                     if (maxDim > 0) {
                         const targetScale = config.targetSize / maxDim;
                         model.scale.set(targetScale, targetScale, targetScale);
                     }
 
-                    // 4. Recalculate bounding box after scaling to find true center
                     const newBox = new THREE.Box3().setFromObject(model);
                     const newCenter = newBox.getCenter(new THREE.Vector3());
                     
-                    // 5. Shift the model geometry so it rotates perfectly around its own center
                     model.position.sub(newCenter);
                     
-                    // Put the centered model inside a wrapper container
                     const wrapper = new THREE.Group();
                     wrapper.add(model);
 
@@ -235,7 +214,7 @@
 
                     pivot.userData = {
                         speed: (Math.random() < 0.5 ? -1 : 1) * (config.speed + Math.random() * 0.001),
-                        modelRef: wrapper // Spin the wrapper so it tumbles properly
+                        modelRef: wrapper 
                     };
 
                     scene.add(pivot);
@@ -246,9 +225,6 @@
 
         const clock = new THREE.Clock();
 
-        // ==========================================
-        // 5. ANIMATION LOOP
-        // ==========================================
         function animate() {
             requestAnimationFrame(animate);
 
