@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>test scene</title>
+    <title>TESTSCENE</title>
     <style>
         body {
             margin: 0;
@@ -104,7 +104,7 @@
         const textMeshes = [];
         const fontLoader = new THREE.FontLoader();
         fontLoader.load('https://threejs.org/examples/fonts/helvetiker_bold.typeface.json', function (font) {
-            const textStr = "FREDDIE WILLETT  •  FREDDIE WILLETT  •  ";
+            const textStr = "FREDDIE WILLETT  •  PERSONAL WEBSITE? WOW!  •  ";
             const textRadius = 7.5; 
 
             for (let i = 0; i < textStr.length; i++) {
@@ -141,16 +141,20 @@
             }
         });
 
-        const iconUrls = [
-            'https://win98icons.alexmeub.com/icons/png/msie1-2.png',
-            'https://win98icons.alexmeub.com/icons/png/directory_closed-4.png',
-            'https://win98icons.alexmeub.com/icons/png/recycle_bin_empty-4.png',
-            'https://win98icons.alexmeub.com/icons/png/computer_explorer-5.png',
-            'https://win98icons.alexmeub.com/icons/png/mouse-4.png',
-            'https://win98icons.alexmeub.com/icons/png/cd_audio_cd_a-3.png',
-            'https://win98icons.alexmeub.com/icons/png/paint_file-2.png',
-            'https://win98icons.alexmeub.com/icons/png/windows_slanted-1.png'
-        ];
+        // ----------------------------------------------------
+        // DYNAMIC RANDOM ICON LOADER
+        // ----------------------------------------------------
+        const totalIconsInFolder = 54;
+        const numberOfIconsToDisplay = 8;
+        const selectedIndices = new Set();
+        
+        // Pick 8 unique random numbers between 1 and 54
+        while(selectedIndices.size < numberOfIconsToDisplay) {
+            selectedIndices.add(Math.floor(Math.random() * totalIconsInFolder) + 1);
+        }
+
+        // Map those numbers to file paths (e.g., ./ico/12.png)
+        const iconUrls = Array.from(selectedIndices).map(num => `./ico/${num}.png`);
 
         const icons = [];
         const textureLoader = new THREE.TextureLoader();
