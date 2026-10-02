@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TEST</title>
+    <title>testscene</title>
     <style>
         body {
             margin: 0;
@@ -29,10 +29,14 @@
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
+
+        const roygbiv = [0xFF0000, 0xFF7F00, 0xFFFF00, 0x00FF00, 0x0000FF, 0x4B0082, 0x9400D3];
+
         const globeGroup = new THREE.Group();
         scene.add(globeGroup);
 
         const globeRadius = 6.0;
+
         const occluderGeometry = new THREE.SphereGeometry(globeRadius, 32, 32);
         const occluderMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
         const occluder = new THREE.Mesh(occluderGeometry, occluderMaterial);
@@ -40,7 +44,7 @@
 
         const lineMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
         const lineRadius = globeRadius + 0.02; 
-        
+
         for (let i = 1; i < 16; i++) {
             const latAngle = (Math.PI / 16) * i;
             const y = lineRadius * Math.cos(latAngle);
@@ -75,32 +79,32 @@
         scene.add(textBandGroup);
 
         const fontLoader = new THREE.FontLoader();
-
         fontLoader.load('https://threejs.org/examples/fonts/helvetiker_bold.typeface.json', function (font) {
-
-            const textStr = "FREDDIE WILLETT ";
+            const textStr = "freddie willett freddie willett ";
             const textRadius = 7.5; 
 
             for (let i = 0; i < textStr.length; i++) {
                 const char = textStr[i];
-
+                
                 const textGeo = new THREE.TextGeometry(char, {
                     font: font,
                     size: 0.7,
-                    height: 0.15, // THIS CREATES THE 3D THICKNESS
+                    height: 0.15,
                     curveSegments: 3,
                     bevelEnabled: false
                 });
                 
                 textGeo.computeBoundingBox();
                 const centerOffset = -0.5 * (textGeo.boundingBox.max.x - textGeo.boundingBox.min.x);
-                const textMesh = new THREE.Mesh(textGeo, new THREE.MeshBasicMaterial({color: 0x000000}));
+                
+                const charColor = roygbiv[Math.floor(Math.random() * roygbiv.length)];
+                const textMesh = new THREE.Mesh(textGeo, new THREE.MeshBasicMaterial({color: charColor}));
 
-                const angle = (i / textStr.length) * Math.PI * 2;
+                const angle = Math.PI - (i / textStr.length) * Math.PI * 2;
                 textMesh.position.x = textRadius * Math.cos(angle);
                 textMesh.position.z = textRadius * Math.sin(angle);
 
-                textMesh.rotation.y = -angle + Math.PI / 2;
+                textMesh.rotation.y = Math.PI / 2 - angle;
                 textMesh.translateX(centerOffset); 
 
                 textBandGroup.add(textMesh);
@@ -124,15 +128,18 @@
             return new THREE.CanvasTexture(canvas);
         }
 
-        // To use an actual image later, replace the map with: new THREE.TextureLoader().load('your-icon.png')
-        const spriteMaterial = new THREE.SpriteMaterial({ 
-            map: createPlaceholderTexture(),
-            depthTest: true 
-        });
+        const sharedTexture = createPlaceholderTexture();
 
         for (let i = 0; i < numberOfIcons; i++) {
             const pivot = new THREE.Group();
             
+            const spriteColor = roygbiv[Math.floor(Math.random() * roygbiv.length)];
+            const spriteMaterial = new THREE.SpriteMaterial({ 
+                map: sharedTexture,
+                color: spriteColor,
+                depthTest: true 
+            });
+
             const sprite = new THREE.Sprite(spriteMaterial);
             sprite.scale.set(1.2, 1.2, 1.2); 
             
@@ -160,7 +167,8 @@
 
             globeGroup.rotation.y += 0.0005;
 
-            textBandGroup.rotation.y += 0.002;
+            textBandGroup.rotation.y -= 0.002;
+            textBandGroup.position.y = Math.sin(Date.now() * 0.003) * 0.5;
 
             icons.forEach(pivot => {
                 pivot.rotation.x += pivot.userData.speedX;
