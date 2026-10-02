@@ -78,7 +78,7 @@
 
         fontLoader.load('https://threejs.org/examples/fonts/helvetiker_bold.typeface.json', function (font) {
 
-            const textStr = "FREDDIE ★ ";
+            const textStr = "FREDDIE WILLETT ";
             const textRadius = 7.5; 
 
             for (let i = 0; i < textStr.length; i++) {
@@ -160,7 +160,7 @@
 
             globeGroup.rotation.y += 0.0005;
 
-            textBandGroup.rotation.y -= 0.002;
+            textBandGroup.rotation.y += 0.002;
 
             icons.forEach(pivot => {
                 pivot.rotation.x += pivot.userData.speedX;
