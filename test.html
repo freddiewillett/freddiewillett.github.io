@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Personal Website - 3D Landing Page</title>
+    <title>TEST</title>
     <style>
         body {
             margin: 0;
@@ -17,43 +17,30 @@
     </style>
 </head>
 <body>
-    <!-- Include Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
     <script>
-        // ==========================================
-        // 1. SCENE SETUP
-        // ==========================================
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0xffffff);
 
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        // SCALED DOWN: Moved camera further back from 12 to 24
         camera.position.z = 24; 
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
-
-        // ==========================================
-        // 2. GLOBE (NO DIAGONALS + BACKFACE CULLING)
-        // ==========================================
         const globeGroup = new THREE.Group();
         scene.add(globeGroup);
 
         const globeRadius = 6.0;
-
-        // The "Occluder": A solid white sphere that hides the back lines and icons 
         const occluderGeometry = new THREE.SphereGeometry(globeRadius, 32, 32);
         const occluderMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff });
         const occluder = new THREE.Mesh(occluderGeometry, occluderMaterial);
         globeGroup.add(occluder);
 
-        // Custom lines to create the grid WITHOUT diagonal triangles
         const lineMaterial = new THREE.LineBasicMaterial({ color: 0x000000 });
-        const lineRadius = globeRadius + 0.02; // Slightly larger to prevent Z-fighting flickering
-
-        // Create Latitudes (horizontal rings)
+        const lineRadius = globeRadius + 0.02; 
+        
         for (let i = 1; i < 16; i++) {
             const latAngle = (Math.PI / 16) * i;
             const y = lineRadius * Math.cos(latAngle);
@@ -68,7 +55,6 @@
             globeGroup.add(new THREE.Line(geometry, lineMaterial));
         }
 
-        // Create Longitudes (vertical rings)
         for (let i = 0; i < 12; i++) {
             const lonAngle = (Math.PI / 12) * i;
             const points = [];
@@ -84,25 +70,20 @@
             globeGroup.add(new THREE.Line(geometry, lineMaterial));
         }
 
-        // ==========================================
-        // 3. 3D TEXT BAND
-        // ==========================================
         const textBandGroup = new THREE.Group();
-        textBandGroup.rotation.x = 0.15; // Slight tilt for perspective
+        textBandGroup.rotation.x = 0.15; 
         scene.add(textBandGroup);
 
         const fontLoader = new THREE.FontLoader();
-        // Loading a standard Three.js JSON font for the 3D thickness
+
         fontLoader.load('https://threejs.org/examples/fonts/helvetiker_bold.typeface.json', function (font) {
-            
-            // --- CHANGE YOUR TEXT HERE ---
-            const textStr = "PLACEHOLDER TEXT  •  PLACEHOLDER TEXT  •  ";
+
+            const textStr = "FREDDIE ★ ";
             const textRadius = 7.5; 
 
             for (let i = 0; i < textStr.length; i++) {
                 const char = textStr[i];
-                
-                // Generates actual 3D geometry for each letter
+
                 const textGeo = new THREE.TextGeometry(char, {
                     font: font,
                     size: 0.7,
@@ -115,12 +96,10 @@
                 const centerOffset = -0.5 * (textGeo.boundingBox.max.x - textGeo.boundingBox.min.x);
                 const textMesh = new THREE.Mesh(textGeo, new THREE.MeshBasicMaterial({color: 0x000000}));
 
-                // Map character along a circle
                 const angle = (i / textStr.length) * Math.PI * 2;
                 textMesh.position.x = textRadius * Math.cos(angle);
                 textMesh.position.z = textRadius * Math.sin(angle);
 
-                // Rotate the letter so it faces outward
                 textMesh.rotation.y = -angle + Math.PI / 2;
                 textMesh.translateX(centerOffset); 
 
@@ -128,13 +107,9 @@
             }
         });
 
-        // ==========================================
-        // 4. FLYING 2D ICONS (BILLBOARDS)
-        // ==========================================
         const icons = [];
         const numberOfIcons = 8;
 
-        // Creates a simple 2D circle graphic as a placeholder texture
         function createPlaceholderTexture() {
             const canvas = document.createElement('canvas');
             canvas.width = 64; canvas.height = 64;
@@ -149,17 +124,15 @@
             return new THREE.CanvasTexture(canvas);
         }
 
-        // --- CHANGE YOUR ICON MESH HERE LATER ---
         // To use an actual image later, replace the map with: new THREE.TextureLoader().load('your-icon.png')
         const spriteMaterial = new THREE.SpriteMaterial({ 
             map: createPlaceholderTexture(),
-            depthTest: true // This guarantees they hide when flying behind the white solid globe
+            depthTest: true 
         });
 
         for (let i = 0; i < numberOfIcons; i++) {
             const pivot = new THREE.Group();
             
-            // Sprites are 2D elements that permanently face the camera (billboard style)
             const sprite = new THREE.Sprite(spriteMaterial);
             sprite.scale.set(1.2, 1.2, 1.2); 
             
@@ -168,7 +141,6 @@
 
             pivot.add(sprite);
 
-            // Randomize starting orbit
             pivot.rotation.x = Math.random() * Math.PI * 2;
             pivot.rotation.y = Math.random() * Math.PI * 2;
             pivot.rotation.z = Math.random() * Math.PI * 2;
@@ -183,19 +155,13 @@
             icons.push(pivot);
         }
 
-        // ==========================================
-        // 5. ANIMATION LOOP
-        // ==========================================
         function animate() {
             requestAnimationFrame(animate);
 
-            // Spins the globe WAY SLOWER and strictly on the X-axis
-            globeGroup.rotation.x += 0.0005;
+            globeGroup.rotation.y += 0.0005;
 
-            // Spin the 3D text band
             textBandGroup.rotation.y -= 0.002;
 
-            // Move the flying 2D icons along their randomized orbits
             icons.forEach(pivot => {
                 pivot.rotation.x += pivot.userData.speedX;
                 pivot.rotation.y += pivot.userData.speedY;
@@ -207,9 +173,6 @@
 
         animate();
 
-        // ==========================================
-        // 6. WINDOW RESIZE HANDLING
-        // ==========================================
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
