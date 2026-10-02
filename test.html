@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>testscene</title>
+    <title>test scene</title>
     <style>
         body {
             margin: 0;
@@ -31,6 +31,29 @@
         document.body.appendChild(renderer.domElement);
 
         const roygbiv = [0xFF0000, 0xFF7F00, 0xFFFF00, 0x00FF00, 0x0000FF, 0x4B0082, 0x9400D3];
+
+        const starsGeo = new THREE.BufferGeometry();
+        const starsCount = 1500;
+        const posArray = new Float32Array(starsCount * 3);
+        const colorArray = new Float32Array(starsCount * 3);
+
+        for(let i = 0; i < starsCount * 3; i++) {
+            posArray[i] = (Math.random() - 0.5) * 100;
+            colorArray[i] = Math.random(); 
+        }
+
+        starsGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        starsGeo.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
+
+        const starsMaterial = new THREE.PointsMaterial({
+            size: 0.15,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.6
+        });
+
+        const starMesh = new THREE.Points(starsGeo, starsMaterial);
+        scene.add(starMesh);
 
         const globeGroup = new THREE.Group();
         scene.add(globeGroup);
@@ -78,9 +101,10 @@
         textBandGroup.rotation.x = 0.15; 
         scene.add(textBandGroup);
 
+        const textMeshes = [];
         const fontLoader = new THREE.FontLoader();
         fontLoader.load('https://threejs.org/examples/fonts/helvetiker_bold.typeface.json', function (font) {
-            const textStr = "freddie willett freddie willett ";
+            const textStr = "FREDDIE WILLETT  •  FREDDIE WILLETT  •  ";
             const textRadius = 7.5; 
 
             for (let i = 0; i < textStr.length; i++) {
@@ -100,6 +124,10 @@
                 const charColor = roygbiv[Math.floor(Math.random() * roygbiv.length)];
                 const textMesh = new THREE.Mesh(textGeo, new THREE.MeshBasicMaterial({color: charColor}));
 
+                const edges = new THREE.EdgesGeometry(textGeo);
+                const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 }));
+                textMesh.add(line);
+
                 const angle = Math.PI - (i / textStr.length) * Math.PI * 2;
                 textMesh.position.x = textRadius * Math.cos(angle);
                 textMesh.position.z = textRadius * Math.sin(angle);
@@ -107,73 +135,87 @@
                 textMesh.rotation.y = Math.PI / 2 - angle;
                 textMesh.translateX(centerOffset); 
 
+                textMesh.userData = { index: i, baseY: textMesh.position.y };
+                textMeshes.push(textMesh);
                 textBandGroup.add(textMesh);
             }
         });
 
+        const iconUrls = [
+            'https://raw.githubusercontent.com/AlexMeub/win98-icons/master/png/msie1-2.png',
+            'https://raw.githubusercontent.com/AlexMeub/win98-icons/master/png/directory_closed-4.png',
+            'https://raw.githubusercontent.com/AlexMeub/win98-icons/master/png/recycle_bin_empty-4.png',
+            'https://raw.githubusercontent.com/AlexMeub/win98-icons/master/png/computer_explorer-5.png',
+            'https://raw.githubusercontent.com/AlexMeub/win98-icons/master/png/mouse-4.png',
+            'https://raw.githubusercontent.com/AlexMeub/win98-icons/master/png/cd_audio_cd_a-3.png',
+            'https://raw.githubusercontent.com/AlexMeub/win98-icons/master/png/paint_file-2.png',
+            'https://raw.githubusercontent.com/AlexMeub/win98-icons/master/png/windows_slanted-1.png'
+        ];
+
         const icons = [];
-        const numberOfIcons = 8;
+        const textureLoader = new THREE.TextureLoader();
 
-        function createPlaceholderTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 64; canvas.height = 64;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.arc(32, 32, 28, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.lineWidth = 4;
-            ctx.strokeStyle = '#000000';
-            ctx.stroke();
-            return new THREE.CanvasTexture(canvas);
-        }
-
-        const sharedTexture = createPlaceholderTexture();
-
-        for (let i = 0; i < numberOfIcons; i++) {
+        iconUrls.forEach((url) => {
             const pivot = new THREE.Group();
             
-            const spriteColor = roygbiv[Math.floor(Math.random() * roygbiv.length)];
-            const spriteMaterial = new THREE.SpriteMaterial({ 
-                map: sharedTexture,
-                color: spriteColor,
-                depthTest: true 
+            textureLoader.load(url, function(texture) {
+                const spriteMaterial = new THREE.SpriteMaterial({ 
+                    map: texture,
+                    depthTest: true 
+                });
+
+                const sprite = new THREE.Sprite(spriteMaterial);
+                sprite.scale.set(1.5, 1.5, 1.5); 
+                
+                const distance = 8.5 + Math.random() * 3;
+                sprite.position.set(distance, 0, 0);
+
+                pivot.add(sprite);
+
+                pivot.rotation.x = Math.random() * Math.PI * 2;
+                pivot.rotation.y = Math.random() * Math.PI * 2;
+                pivot.rotation.z = Math.random() * Math.PI * 2;
+
+                pivot.userData = {
+                    speedX: (Math.random() - 0.5) * 0.02,
+                    speedY: (Math.random() - 0.5) * 0.02,
+                    speedZ: (Math.random() - 0.5) * 0.02,
+                    spriteRef: sprite
+                };
+
+                scene.add(pivot);
+                icons.push(pivot);
             });
+        });
 
-            const sprite = new THREE.Sprite(spriteMaterial);
-            sprite.scale.set(1.2, 1.2, 1.2); 
-            
-            const distance = 8.5 + Math.random() * 3;
-            sprite.position.set(distance, 0, 0);
-
-            pivot.add(sprite);
-
-            pivot.rotation.x = Math.random() * Math.PI * 2;
-            pivot.rotation.y = Math.random() * Math.PI * 2;
-            pivot.rotation.z = Math.random() * Math.PI * 2;
-
-            pivot.userData = {
-                speedX: (Math.random() - 0.5) * 0.02,
-                speedY: (Math.random() - 0.5) * 0.02,
-                speedZ: (Math.random() - 0.5) * 0.02
-            };
-
-            scene.add(pivot);
-            icons.push(pivot);
-        }
+        const clock = new THREE.Clock();
 
         function animate() {
             requestAnimationFrame(animate);
 
-            globeGroup.rotation.y += 0.0005;
+            const time = clock.getElapsedTime();
+
+            globeGroup.rotation.y += 0.002;
+            globeGroup.position.y = Math.sin(time * 1.5) * 0.2;
+
+            starMesh.rotation.y += 0.0005;
+            starMesh.rotation.x += 0.0002;
 
             textBandGroup.rotation.y -= 0.002;
-            textBandGroup.position.y = Math.sin(Date.now() * 0.003) * 0.5;
+            
+            textMeshes.forEach(mesh => {
+                mesh.position.y = mesh.userData.baseY + Math.sin(time * 3 + mesh.userData.index * 0.5) * 0.4;
+            });
 
             icons.forEach(pivot => {
                 pivot.rotation.x += pivot.userData.speedX;
                 pivot.rotation.y += pivot.userData.speedY;
                 pivot.rotation.z += pivot.userData.speedZ;
+                
+                if (pivot.userData.spriteRef) {
+                    const scaleWave = 1.5 + Math.sin(time * 4 + pivot.rotation.x) * 0.2;
+                    pivot.userData.spriteRef.scale.set(scaleWave, scaleWave, scaleWave);
+                }
             });
 
             renderer.render(scene, camera);
